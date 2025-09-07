@@ -1,10 +1,18 @@
 [project]
 name = "py-datavolley"
 version = "0.1.0"
-description = "Add your description here"
+authors = [{name = "Tyler Widdison"}]
+description = "Cousin to the R opnevolley packge"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "requests>=2.32.5",
     "ruff>=0.12.12",
     "ty>=0.0.1a20",
+]
+
+[tool.hatch.build.targets.wheel]
+include = [
+    "datavolley/",
+    "datavolley/data/*.dvw"
 ]
