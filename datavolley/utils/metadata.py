@@ -192,3 +192,26 @@ def get_match_result(set_scores: dict) -> dict:
         if team_2_sets_won > team_1_sets_won
         else "tie",
     }
+
+
+def extract_comments(raw_content: str) -> str:
+    """
+    Extract comments from DVW file content.
+
+    Args:
+        raw_content: Raw DVW file content
+
+    Returns:
+        Comments string, or empty string if not found
+    """
+    # Find the [3COMMENTS] section
+    comments_pattern = r"\[3COMMENTS\](.*?)(?=\[3|\n\n|$)"
+    match = re.search(comments_pattern, raw_content, re.DOTALL)
+
+    if match:
+        comments_section = match.group(1).strip()
+        # Remove empty lines and join remaining lines
+        lines = [line.strip() for line in comments_section.split("\n") if line.strip()]
+        return "\n".join(lines) if lines else ""
+
+    return ""
