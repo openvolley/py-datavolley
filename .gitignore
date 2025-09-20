@@ -26,3 +26,9 @@ uv.lock
 # OS
 .DS_Store
 Thumbs.db
+
+# Programes
+opencode.exe
+
+# Data
+sample_plays.json
