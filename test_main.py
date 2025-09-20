@@ -103,15 +103,13 @@ def main():
         dvw_file = dv.example_file()
         if not Path(dvw_file).exists():
             dvw_file = None
-    except:
+    except Exception:
         pass
 
     # Option 2: Look for example_match.dvw in the current directory
     if not dvw_file:
         current_dir = Path.cwd()
-        example_file = current_dir / "example_match.dvw"
-        if example_file.exists():
-            dvw_file = str(example_file)
+        dvw_file = current_dir / "example_match.dvw"
 
     # Option 3: Look for any .dvw file in the current directory
     if not dvw_file:
