@@ -4,15 +4,7 @@ A Python package for parsing and analyzing volleyball scouting data from DataVol
 
 Currently rebuilding [pydatavolley](https://github.com/openvolley/pydatavolley) with modern Python tooling ([Astral ecosystem](https://docs.astral.sh/)) for improved experience: UV for package management, Ruff for linting/formatting and [Ty](https://github.com/astral-sh/ty) for type checking.
 
-## Versioning
-
-This project uses automatic semantic versioning based on commit messages:
-
-- **Patch** (0.0.X): Bug fixes, documentation updates, minor changes
-- **Minor** (0.X.0): New features (commits starting with `feat:` or `feature:`)  
-- **Major** (X.0.0): Breaking changes (commits containing `BREAKING CHANGE` or `!:`)
-
-Versions are automatically bumped and released when pushing to the main branch.
+# Running
 
 If you want to clone, here's how to set up the development environment using UV:
 

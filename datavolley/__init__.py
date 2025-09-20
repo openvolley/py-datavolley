@@ -28,8 +28,8 @@ from .utils.metadata import (
 )
 
 # Version info
-__version__ = "0.1.0"
-__author__ = "Your Name"
+__version__ = "0.1.1"
+__author__ = "Tyler Widdison"
 
 # Explicitly define what's available when someone imports the package
 __all__ = [
