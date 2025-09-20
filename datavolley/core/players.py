@@ -1,7 +1,47 @@
 # datavolley/core/players.py
 
+import random
 import re
+import string
 from typing import Dict, List, Optional
+
+
+def extract_teams(raw_content: str) -> Dict:
+    """
+    Extract team data from DVW file content.
+
+    This is a lightweight version to avoid circular imports.
+    For full team functionality, use teams.extract_teams()
+
+    Args:
+        raw_content: Raw DVW file content
+
+    Returns:
+        Dictionary with team information
+    """
+    # Find the [3TEAMS] section
+    teams_pattern = r"\[3TEAMS\](.*?)(?=\[3|\n\n|$)"
+    match = re.search(teams_pattern, raw_content, re.DOTALL)
+
+    if not match:
+        return {}
+
+    teams_section = match.group(1).strip()
+    lines = [line.strip() for line in teams_section.split("\n") if line.strip()]
+
+    teams_data = {}
+
+    # Parse each team line
+    for i, line in enumerate(lines):
+        if line:
+            parts = line.split(";")
+            if len(parts) >= 2:
+                if i == 0:
+                    teams_data["team_1"] = parts[1] if parts[1] else None
+                elif i == 1:
+                    teams_data["team_2"] = parts[1] if parts[1] else None
+
+    return teams_data
 
 
 def extract_players(raw_content: str) -> Dict[str, List[Dict]]:
@@ -14,6 +54,7 @@ def extract_players(raw_content: str) -> Dict[str, List[Dict]]:
     Returns:
         Dictionary with 'home' and 'visiting' team players
     """
+    teams = extract_teams(raw_content)
     players = {"home": [], "visiting": []}
 
     # Extract home team players [3PLAYERS-H]
@@ -22,7 +63,7 @@ def extract_players(raw_content: str) -> Dict[str, List[Dict]]:
 
     if home_match:
         home_section = home_match.group(1).strip()
-        players["home"] = parse_player_lines(home_section, team="home")
+        players["home"] = parse_player_lines(home_section, teams.get("team_1", "Home"))
 
     # Extract visiting team players [3PLAYERS-V]
     visiting_pattern = r"\[3PLAYERS-V\](.*?)(?=\[3|\n\n|$)"
@@ -30,7 +71,9 @@ def extract_players(raw_content: str) -> Dict[str, List[Dict]]:
 
     if visiting_match:
         visiting_section = visiting_match.group(1).strip()
-        players["visiting"] = parse_player_lines(visiting_section, team="visiting")
+        players["visiting"] = parse_player_lines(
+            visiting_section, teams.get("team_2", "Visiting")
+        )
 
     return players
 
@@ -41,7 +84,7 @@ def parse_player_lines(section_content: str, team: str) -> List[Dict]:
 
     Args:
         section_content: Raw text content of player section
-        team: 'home' or 'visiting'
+        team: Team name
 
     Returns:
         List of player dictionaries
@@ -63,7 +106,7 @@ def parse_single_player(line: str, team: str) -> Optional[Dict]:
 
     Args:
         line: Single player data line
-        team: 'home' or 'visiting'
+        team: Team name
 
     Returns:
         Dictionary with player information or None if invalid
@@ -76,39 +119,32 @@ def parse_single_player(line: str, team: str) -> Optional[Dict]:
         return None
 
     try:
+        # Extract player number safely
+        player_number = parts[1] if len(parts) > 1 and parts[1] else "0"
+
+        # Extract player ID safely
+        player_id = parts[8] if len(parts) > 8 and parts[8] else None
+        if not player_id:
+            player_id = "".join(
+                random.choices(string.ascii_letters + string.digits, k=6)
+            )
+
+        # Extract names safely
+        last_name = parts[9] if len(parts) > 9 and parts[9] else None
+        first_name = parts[10] if len(parts) > 10 and parts[10] else None
+
+        # Create full name
+        name_parts = [first_name, last_name]
+        full_name = " ".join(filter(None, name_parts)) or None
+
         player = {
             "team": team,
-            "team_id": int(parts[0]) if parts[0].isdigit() else None,
-            "shirt_number": int(parts[1]) if parts[1].isdigit() else None,
-            "player_count_pos": int(parts[2]) if parts[2].isdigit() else None,
-            # Starting positions for different sets (parts 3-7)
-            "set1_position": parts[3] if parts[3] and parts[3] != "*" else None,
-            "set2_position": parts[4] if parts[4] and parts[4] != "*" else None,
-            "set3_position": parts[5] if parts[5] and parts[5] != "*" else None,
-            "set4_position": parts[6] if parts[6] and parts[6] != "*" else None,
-            "set5_position": parts[7] if parts[7] and parts[7] != "*" else None,
-            # Player identification (typically around parts 8-12)
-            "player_id": parts[8] if len(parts) > 8 else None,
-            "last_name": parts[9] if len(parts) > 9 else None,
-            "first_name": parts[10] if len(parts) > 10 else None,
-            "nickname": parts[11] if len(parts) > 11 else None,
-            # Additional fields that might be present
+            "player_number": player_number,
+            "player_id": player_id,
+            "last_name": last_name,
+            "first_name": first_name,
             "role": parts[12] if len(parts) > 12 and parts[12] else None,
-            "captain": parts[13] if len(parts) > 13 and parts[13] else None,
-            "libero": parts[14] == "True" if len(parts) > 14 else False,
-            # Added data
-            "full_name": " ".join(
-                filter(
-                    None,
-                    [
-                        parts[10] if len(parts) > 10 else None,
-                        parts[9] if len(parts) > 9 else None,
-                    ],
-                )
-            )
-            or None,
-            # Store all raw parts for debugging/future use
-            "raw_data": parts,
+            "full_name": full_name,
         }
 
         return player
@@ -119,44 +155,78 @@ def parse_single_player(line: str, team: str) -> Optional[Dict]:
         return None
 
 
-def get_starting_lineup(players: List[Dict], set_number: int = 1) -> List[Dict]:
+def get_player_by_number(
+    players_data: Dict[str, List[Dict]], team: str, number: int
+) -> Optional[Dict]:
     """
-    Get the starting lineup for a specific set.
+    Get a player by their jersey number.
 
     Args:
-        players: List of player dictionaries
-        set_number: Set number (1-5)
-
-    Returns:
-        List of players in starting positions for that set
-    """
-    position_field = f"set{set_number}_position"
-
-    starting_players = []
-    for player in players:
-        if player.get(position_field) is not None:
-            starting_players.append({**player, "position": player[position_field]})
-
-    # Sort by position
-    starting_players.sort(
-        key=lambda x: int(x["position"]) if x["position"].isdigit() else 999
-    )
-
-    return starting_players
-
-
-def get_player_by_number(players: List[Dict], shirt_number: int) -> Optional[Dict]:
-    """
-    Find a player by their shirt number.
-
-    Args:
-        players: List of player dictionaries
-        shirt_number: Player's shirt number
+        players_data: Dictionary from extract_players()
+        team: 'home' or 'visiting'
+        number: Player jersey number
 
     Returns:
         Player dictionary or None if not found
     """
-    for player in players:
-        if player.get("shirt_number") == shirt_number:
-            return player
+    if team not in players_data:
+        return None
+
+    for player in players_data[team]:
+        try:
+            if int(player["player_number"]) == number:
+                return player
+        except (ValueError, TypeError):
+            continue
+
     return None
+
+
+def get_starting_lineup(players_data: Dict[str, List[Dict]], team: str) -> List[Dict]:
+    """
+    Get the starting lineup for a team (typically first 6 players with valid numbers).
+
+    Args:
+        players_data: Dictionary from extract_players()
+        team: 'home' or 'visiting'
+
+    Returns:
+        List of starting player dictionaries
+    """
+    if team not in players_data:
+        return []
+
+    # Filter players with valid numbers and sort by number
+    valid_players = []
+    for player in players_data[team]:
+        try:
+            player_num = int(player["player_number"])
+            if player_num > 0:  # Valid jersey number
+                valid_players.append((player_num, player))
+        except (ValueError, TypeError):
+            continue
+
+    # Sort by jersey number and return first 6
+    valid_players.sort(key=lambda x: x[0])
+    return [player[1] for player in valid_players[:6]]
+
+
+def get_players_by_team(
+    players_data: Dict[str, List[Dict]], team_name: str
+) -> List[Dict]:
+    """
+    Get all players for a specific team by team name.
+
+    Args:
+        players_data: Dictionary from extract_players()
+        team_name: Name of the team to filter by
+
+    Returns:
+        List of player dictionaries
+    """
+    all_players = []
+    for team_players in players_data.values():
+        for player in team_players:
+            if player.get("team") == team_name:
+                all_players.append(player)
+    return all_players
