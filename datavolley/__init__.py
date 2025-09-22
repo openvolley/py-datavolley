@@ -1,8 +1,8 @@
 # datavolley/__init__.py
-
 from pathlib import Path
 
 # Core extraction functions
+from .core.coordinates import dv_index2xy, add_xy
 from .core.attack_combos import extract_attack_combinations
 from .core.code import extract_skill_subtype, get_skill_description, parse_play_code
 from .core.players import (
