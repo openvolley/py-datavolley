@@ -8,6 +8,7 @@ from .core.players import extract_players
 from .core.plays import extract_plays, extract_score_from_code
 from .core.set_calls import extract_setter_calls
 from .core.teams import extract_teams
+from .io.plays import plays_data
 from .utils.metadata import (
     extract_comments,
     extract_date,
@@ -17,13 +18,14 @@ from .utils.metadata import (
 )
 
 # Version info
-__version__ = "0.1.2"
+__version__ = "0.1.4"
 __author__ = "Tyler Widdison"
 
 # Explicitly define what's available when someone imports the package
 __all__ = [
     # Main loading function
     "load_dvw",
+    "read_dv",
     "example_file",
     # Metadata functions
     "extract_date",
@@ -155,3 +157,92 @@ def get_match_summary(match_data: dict) -> dict:
         "home_players": len(players.get("home", [])),
         "visiting_players": len(players.get("visiting", [])),
     }
+
+
+def read_dv(file_path: str) -> list[dict]:
+    """
+    Load and parse a DVW file into a list of dictionaries suitable for DataFrame creation.
+
+    Args:
+        file_path (str): Path to the DVW file
+
+    Returns:
+        list[dict]: List of dictionaries containing play data with coordinate information
+    """
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+    except FileNotFoundError:
+        raise FileNotFoundError(f"DVW file not found: {file_path}")
+    except UnicodeDecodeError:
+        with open(file_path, "r", encoding="latin-1") as f:
+            content = f.read()
+
+    match_data = load_dvw(file_path)
+    plays = match_data.get("plays", [])
+    teams = match_data.get("teams", {})
+    match_id = match_data.get("match_id")
+
+    result = []
+    template = plays_data()[0]
+
+    for play in plays:
+        play_dict = template.copy()
+
+        for key, value in play.items():
+            if key in play_dict:
+                play_dict[key] = value
+
+        play_dict["match_id"] = match_id
+        play_dict["home_team"] = teams.get("team_1")
+        play_dict["visiting_team"] = teams.get("team_2")
+        play_dict["home_team_id"] = teams.get("team_1_id")
+        play_dict["visiting_team_id"] = teams.get("team_2_id")
+
+        play_dict["home_team_score"] = play.get("home_score")
+        play_dict["visiting_team_score"] = play.get("visiting_score")
+
+        code = play.get("code")
+        if code:
+            parsed_code = parse_play_code(content, code)
+            if parsed_code:
+                play_dict["team"] = parsed_code.get("team")
+                play_dict["player_number"] = parsed_code.get("player_number")
+                play_dict["player_name"] = parsed_code.get("player_name")
+                play_dict["player_id"] = parsed_code.get("player_id")
+                play_dict["skill"] = parsed_code.get("skill")
+                play_dict["skill_subtype"] = parsed_code.get("skill_subtype")
+                play_dict["evaluation_code"] = parsed_code.get("evaluation_code")
+                play_dict["attack_code"] = parsed_code.get("attack_code")
+                play_dict["set_code"] = parsed_code.get("set_code")
+                play_dict["set_type"] = parsed_code.get("set_type")
+                play_dict["start_zone"] = parsed_code.get("start_zone")
+                play_dict["end_zone"] = parsed_code.get("end_zone")
+                play_dict["end_subzone"] = parsed_code.get("end_subzone")
+                play_dict["num_players_numeric"] = parsed_code.get(
+                    "num_players_numeric"
+                )
+
+        start_coord = play.get("start_coordinate")
+        if start_coord is not None:
+            coords = dv_index2xy(start_coord)
+            if coords:
+                play_dict["start_coordinate_x"], play_dict["start_coordinate_y"] = (
+                    coords
+                )
+
+        mid_coord = play.get("mid_coordinate")
+        if mid_coord is not None:
+            coords = dv_index2xy(mid_coord)
+            if coords:
+                play_dict["mid_coordinate_x"], play_dict["mid_coordinate_y"] = coords
+
+        end_coord = play.get("end_coordinate")
+        if end_coord is not None:
+            coords = dv_index2xy(end_coord)
+            if coords:
+                play_dict["end_coordinate_x"], play_dict["end_coordinate_y"] = coords
+
+        result.append(play_dict)
+
+    return result

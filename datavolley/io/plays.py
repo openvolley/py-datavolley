@@ -13,7 +13,7 @@ def plays_data() -> List[Dict]:
     return [
         {
             "match_id": None,
-            "video_file_number": None,
+            # "video_file_number": None,
             "video_time": None,
             "code": None,
             "team": None,
@@ -21,6 +21,7 @@ def plays_data() -> List[Dict]:
             "player_name": None,
             "player_id": None,
             "skill": None,
+            "skill_subtype": None,
             "evaluation_code": None,
             "setter_position": None,
             "attack_code": None,
