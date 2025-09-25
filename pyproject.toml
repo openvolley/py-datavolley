@@ -6,9 +6,8 @@ description = "Cousin to the R opnevolley packge"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "requests>=2.32.5",
     "ruff>=0.13.1",
-    "ty>=0.0.1a20",
+    "ty>=0.0.1a21",
 ]
 
 [tool.hatch.build.targets.wheel]
