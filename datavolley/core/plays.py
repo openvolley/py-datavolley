@@ -42,9 +42,9 @@ def parse_play_line(line: str, line_number: int) -> Optional[Dict]:
         play_data = {
             "line_number": line_number,
             "code": parts[0] if parts[0] else None,
-            "start_coordiante": parts[4] if len(parts) > 4 else None,
+            "start_coordinate": parts[4] if len(parts) > 4 else None,
             "mid_coordinate": parts[5] if len(parts) > 5 else None,
-            "end_coordainte": parts[6] if len(parts) > 6 and parts[6] else None,
+            "end_coordinate": parts[6] if len(parts) > 6 and parts[6] else None,
             "set_number": parts[8] if len(parts) > 8 and parts[8] else None,
             "home_setter_position": parts[9] if len(parts) > 9 else None,
             "visiting_setter_position": parts[10] if len(parts) > 10 else None,
