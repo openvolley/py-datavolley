@@ -36,3 +36,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
    # Development dependencies are defined in pyproject.toml
    uv sync --group dev
    ```
+
+# Contributing
+
+Please create an issue, fork and create a pull request.

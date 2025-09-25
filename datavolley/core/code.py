@@ -134,6 +134,64 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
     return parsed
 
 
+def extract_skill_subtype(code: str, skill_abb: str, range_pos: int) -> Optional[str]:
+    """
+    Extract skill subtype from the code.
+
+    Args:
+        code: The play code
+        skill_abb: Single character skill abbreviation
+        range_pos: Position in code to check for subtype
+
+    Returns:
+        Skill subtype description or None
+    """
+    reception_subtypes = {
+        "R": "Right",
+        "L": "Left",
+        "M": "Midline",
+        "W": "Low",
+        "O": "Overhead",
+    }
+
+    attack_block_subtypes = {
+        "0": "No block",
+        "1": "1 player block",
+        "2": "2 player block",
+        "3": "3 player block",
+        "4": "Hole block",
+    }
+
+    attack_subtypes = {"H": "Hard", "P": "Soft spike", "T": "Tip"}
+
+    set_subtypes = {
+        "1": "1 hand set",
+        "2": "2 hands set",
+        "3": "Bump set",
+        "4": "Other set",
+        "5": "Underhand set",
+    }
+
+    # Create a mapping of skill abbreviations to their subtypes
+    skill_mappings = {
+        "R": reception_subtypes,
+        "A": attack_subtypes,
+        "B": attack_block_subtypes,
+        "E": set_subtypes,
+    }
+
+    # Extract the character at the specified position
+    if len(code) > range_pos:
+        subtype_code = code[range_pos]
+
+        # Get the appropriate mapping and return the subtype
+        if skill_abb in skill_mappings:
+            mapping = skill_mappings[skill_abb]
+            return mapping.get(subtype_code, f"Unknown subtype: {subtype_code}")
+
+    return None
+
+
 def _extract_teams_lightweight(raw_content: str) -> Dict:
     """
     Lightweight team extraction to avoid circular imports.
@@ -217,85 +275,3 @@ def _parse_player_lines_lightweight(section_content: str):
                 continue
 
     return players
-
-
-def extract_skill_subtype(code: str, skill_abb: str, range_pos: int) -> Optional[str]:
-    """
-    Extract skill subtype from the code.
-
-    Args:
-        code: The play code
-        skill_abb: Single character skill abbreviation
-        range_pos: Position in code to check for subtype
-
-    Returns:
-        Skill subtype description or None
-    """
-    reception_subtypes = {
-        "R": "Right",
-        "L": "Left",
-        "M": "Midline",
-        "W": "Low",
-        "O": "Overhead",
-    }
-
-    attack_block_subtypes = {
-        "0": "No block",
-        "1": "1 player block",
-        "2": "2 player block",
-        "3": "3 player block",
-        "4": "Hole block",
-    }
-
-    attack_subtypes = {"H": "Hard", "P": "Soft spike", "T": "Tip"}
-
-    set_subtypes = {
-        "1": "1 hand set",
-        "2": "2 hands set",
-        "3": "Bump set",
-        "4": "Other set",
-        "5": "Underhand set",
-    }
-
-    # Create a mapping of skill abbreviations to their subtypes
-    skill_mappings = {
-        "R": reception_subtypes,
-        "A": attack_subtypes,
-        "B": attack_block_subtypes,
-        "E": set_subtypes,
-    }
-
-    # Extract the character at the specified position
-    if len(code) > range_pos:
-        subtype_code = code[range_pos]
-
-        # Get the appropriate mapping and return the subtype
-        if skill_abb in skill_mappings:
-            mapping = skill_mappings[skill_abb]
-            return mapping.get(subtype_code, f"Unknown subtype: {subtype_code}")
-
-    return None
-
-
-def get_skill_description(skill_code: str) -> Optional[str]:
-    """
-    Get human-readable description for skill codes.
-
-    Args:
-        skill_code: Single character skill code (S, R, E, A, D, B, F, p)
-
-    Returns:
-        Human-readable skill description or None if unknown
-    """
-    skill_descriptions = {
-        "S": "Serve",
-        "R": "Reception",
-        "E": "Set",
-        "A": "Attack",
-        "D": "Dig",
-        "B": "Block",
-        "F": "Freeball",
-        "p": "Point",
-    }
-
-    return skill_descriptions.get(skill_code)

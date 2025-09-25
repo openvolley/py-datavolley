@@ -1,24 +1,13 @@
 # datavolley/__init__.py
 from pathlib import Path
 
-# Core extraction functions
-from .core.coordinates import dv_index2xy, add_xy
 from .core.attack_combos import extract_attack_combinations
-from .core.code import extract_skill_subtype, get_skill_description, parse_play_code
-from .core.players import (
-    extract_players,
-    get_player_by_number,
-    get_players_by_team,
-    get_starting_lineup,
-)
+from .core.code import extract_skill_subtype, parse_play_code
+from .core.coordinates import dv_index2xy
+from .core.players import extract_players
 from .core.plays import extract_plays, extract_score_from_code
-from .core.set_calls import (
-    extract_setter_calls,
-    get_call_by_code,
-    get_calls_with_additional_codes,
-    get_setter_call_summary,
-)
-from .core.teams import extract_teams, get_team_by_id, get_team_info
+from .core.set_calls import extract_setter_calls
+from .core.teams import extract_teams
 from .utils.metadata import (
     extract_comments,
     extract_date,
@@ -28,7 +17,7 @@ from .utils.metadata import (
 )
 
 # Version info
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __author__ = "Tyler Widdison"
 
 # Explicitly define what's available when someone imports the package
@@ -44,26 +33,21 @@ __all__ = [
     "extract_comments",
     # Team functions
     "extract_teams",
-    "get_team_by_id",
-    "get_team_info",
     # Player functions
     "extract_players",
-    "get_player_by_number",
-    "get_starting_lineup",
-    "get_players_by_team",
     # Play functions
     "extract_plays",
     "extract_score_from_code",
     "parse_play_code",
-    "get_skill_description",
     "extract_skill_subtype",
     # Attack combination functions
     "extract_attack_combinations",
     # Setter call functions
     "extract_setter_calls",
-    "get_call_by_code",
-    "get_calls_with_additional_codes",
-    "get_setter_call_summary",
+    # Coordinate functions
+    "dv_index2xy",
+    # Summary function
+    "get_match_summary",
 ]
 
 
@@ -171,7 +155,3 @@ def get_match_summary(match_data: dict) -> dict:
         "home_players": len(players.get("home", [])),
         "visiting_players": len(players.get("visiting", [])),
     }
-
-
-# Add the summary function to exports
-__all__.append("get_match_summary")
