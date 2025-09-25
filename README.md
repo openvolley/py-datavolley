@@ -15,6 +15,9 @@ If you want to clone, here's how to set up the development environment using UV:
 ```bash
 # Install uv if you haven't already
 curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
 1. Clone the repository:

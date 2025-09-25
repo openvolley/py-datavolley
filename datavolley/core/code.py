@@ -40,6 +40,7 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
         "num_players_numeric": None,
         "skill_subtype": None,
         "attack_code": None,
+        "set_type": None,
     }
 
     # Extract Team using inline team extraction (avoid circular imports)
@@ -97,7 +98,7 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
             "p": "Point",
         }
         skill_code = code[3]
-        parsed["skill"] = skill_mapping.get(skill_code, f"Unknown skill: {skill_code}")
+        parsed["skill"] = skill_mapping.get(skill_code, "")
 
     # Extract Evaluation (position 4)
     if len(code) > 4:
@@ -107,9 +108,11 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
     if len(code) > 6 and code[3] == "A" and code[6:8] != "~~":
         parsed["attack_code"] = code[6:8]
 
-    # Extract Set codes
+    # Extract Set codes and set type
     if len(code) > 6 and code[3] == "E" and code[6:8] != "~~":
         parsed["set_code"] = code[6:8]
+    if len(code) > 6 and code[3] == "E" and code[8:9] != "~":
+        parsed["set_type"] = code[8:9]
 
     # Extract Blockers
     if len(code) > 13 and parsed["skill"] == "Attack":
@@ -162,7 +165,12 @@ def extract_skill_subtype(code: str, skill_abb: str, range_pos: int) -> Optional
         "4": "Hole block",
     }
 
-    attack_subtypes = {"H": "Hard", "P": "Soft spike", "T": "Tip"}
+    attack_subtypes = {
+        "H": "Hard",
+        "P": "Soft spike",
+        "T": "Tip",
+        "O": "Other attack",
+    }
 
     set_subtypes = {
         "1": "1 hand set",
@@ -170,6 +178,8 @@ def extract_skill_subtype(code: str, skill_abb: str, range_pos: int) -> Optional
         "3": "Bump set",
         "4": "Other set",
         "5": "Underhand set",
+        "O": "Overhead set",
+        "T": "Transition set",
     }
 
     # Create a mapping of skill abbreviations to their subtypes
@@ -187,7 +197,7 @@ def extract_skill_subtype(code: str, skill_abb: str, range_pos: int) -> Optional
         # Get the appropriate mapping and return the subtype
         if skill_abb in skill_mappings:
             mapping = skill_mappings[skill_abb]
-            return mapping.get(subtype_code, f"Unknown subtype: {subtype_code}")
+            return mapping.get(subtype_code, "")
 
     return None
 
