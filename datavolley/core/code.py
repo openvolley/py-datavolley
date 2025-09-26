@@ -40,7 +40,6 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
         "num_players_numeric": None,
         "skill_subtype": None,
         "attack_code": None,
-        "set_type": None,
     }
 
     # Extract Team using inline team extraction (avoid circular imports)
@@ -108,11 +107,9 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
     if len(code) > 6 and code[3] == "A" and code[6:8] != "~~":
         parsed["attack_code"] = code[6:8]
 
-    # Extract Set codes and set type
+    # Extract Set codes
     if len(code) > 6 and code[3] == "E" and code[6:8] != "~~":
         parsed["set_code"] = code[6:8]
-    if len(code) > 6 and code[3] == "E" and code[8:9] != "~":
-        parsed["set_type"] = code[8:9]
 
     # Extract Blockers
     if len(code) > 13 and parsed["skill"] == "Attack":
@@ -130,41 +127,35 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
         parsed["end_subzone"] = code[11] if code[11] != "~" else None
 
     # Extract Skill subtype
-    if len(code) > 4 and parsed["skill"]:
-        skill_abbrev = code[3]
-        parsed["skill_subtype"] = extract_skill_subtype(code, skill_abbrev, 4)
+    if parsed["skill"]:
+        parsed["skill_subtype"] = extract_skill_subtype(code, parsed["skill"])
 
     return parsed
 
 
-def extract_skill_subtype(code: str, skill_abb: str, range_pos: int) -> Optional[str]:
+def extract_skill_subtype(code: str, skill: str) -> Optional[str]:
     """
-    Extract skill subtype from the code.
+    Extract skill subtype from the code based on skill type.
 
     Args:
         code: The play code
-        skill_abb: Single character skill abbreviation
-        range_pos: Position in code to check for subtype
+        skill: The skill name (Serve, Reception, Attack, etc.)
 
     Returns:
         Skill subtype description or None
     """
-    reception_subtypes = {
-        "R": "Right",
-        "L": "Left",
-        "M": "Midline",
-        "W": "Low",
-        "O": "Overhead",
+
+    # Serve subtypes (position 4)
+    serve_subtype_map = {
+        "Q": "Jump Spin",  # Updated to match your requirement
+        "M": "Jump Float",
+        "T": "Standing Float",
+        "H": "Float",  # Updated to match your requirement
+        "O": "Serve Other",
+        "N": "Hybrid",
     }
 
-    attack_block_subtypes = {
-        "0": "No block",
-        "1": "1 player block",
-        "2": "2 player block",
-        "3": "3 player block",
-        "4": "Hole block",
-    }
-
+    # Attack subtypes (position 12)
     attack_subtypes = {
         "H": "Hard",
         "P": "Soft spike",
@@ -172,32 +163,53 @@ def extract_skill_subtype(code: str, skill_abb: str, range_pos: int) -> Optional
         "O": "Other attack",
     }
 
+    # Set subtypes (position 4)
     set_subtypes = {
         "1": "1 hand set",
         "2": "2 hands set",
         "3": "Bump set",
         "4": "Other set",
         "5": "Underhand set",
-        "O": "Overhead set",
-        "T": "Transition set",
     }
 
-    # Create a mapping of skill abbreviations to their subtypes
-    skill_mappings = {
-        "R": reception_subtypes,
-        "A": attack_subtypes,
-        "B": attack_block_subtypes,
-        "E": set_subtypes,
+    # Block subtypes (position 4)
+    block_subtypes = {
+        "0": "No block",
+        "1": "1 player block",
+        "2": "2 player block",
+        "3": "3 player block",
+        "4": "Hole block",
     }
 
-    # Extract the character at the specified position
-    if len(code) > range_pos:
-        subtype_code = code[range_pos]
+    if skill == "Serve" and len(code) > 4:
+        subtype_code = code[4]
+        return serve_subtype_map.get(subtype_code, None)
 
-        # Get the appropriate mapping and return the subtype
-        if skill_abb in skill_mappings:
-            mapping = skill_mappings[skill_abb]
-            return mapping.get(subtype_code, "")
+    elif skill == "Reception" and len(code) > 4:
+        # Use the same serve subtype map for reception
+        subtype_code = code[4]
+        return serve_subtype_map.get(subtype_code, None)
+
+    elif skill == "Attack" and len(code) > 12:
+        # Attack subtype is at position 12 (index 12:13)
+        # Example: 'a15AN-CF~23DT2~-5F' -> 'T' at position 12
+        subtype_code = code[12]
+        if subtype_code != "~":
+            return attack_subtypes.get(subtype_code, None)
+        return None
+
+    elif skill == "Set" and len(code) > 4:
+        subtype_code = code[4]
+        return set_subtypes.get(subtype_code, None)
+
+    elif skill == "Block" and len(code) > 4:
+        subtype_code = code[4]
+        return block_subtypes.get(subtype_code, None)
+
+    elif skill == "Dig" and len(code) > 4:
+        # Dig uses same subtypes as serve/reception
+        subtype_code = code[4]
+        return serve_subtype_map.get(subtype_code, None)
 
     return None
 
@@ -273,7 +285,9 @@ def _parse_player_lines_lightweight(section_content: str):
                     else f"player_{player_number}"
                 )
 
-                full_name = " ".join(filter(None, [first_name, last_name])) or None
+                full_name = (
+                    " ".join(list(filter(None, [first_name, last_name]))) or None
+                )
 
                 player = {
                     "player_number": player_number,
