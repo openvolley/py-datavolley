@@ -11,7 +11,7 @@ build/
 
 # Data
 *.vsm
-
+*.json
 # Virtual environments
 .venv/
 venv/
