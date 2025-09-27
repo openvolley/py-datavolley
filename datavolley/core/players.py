@@ -135,7 +135,7 @@ def parse_single_player(line: str, team: str) -> Optional[Dict]:
 
         # Create full name
         name_parts = [first_name, last_name]
-        full_name = " ".join(filter(None, name_parts)) or None
+        full_name = " ".join(str(filter(None, name_parts))) or None
 
         player = {
             "team": team,
