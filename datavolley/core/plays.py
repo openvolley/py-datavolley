@@ -39,15 +39,22 @@ def parse_play_line(line: str, line_number: int) -> Optional[Dict]:
     parts = line.split(";")
 
     try:
+        code = parts[0] if parts[0] else None
+        home_setter_position = parts[9] if len(parts) > 9 else None
+        visiting_setter_position = parts[10] if len(parts) > 10 else None
+
         play_data = {
             "line_number": line_number,
-            "code": parts[0] if parts[0] else None,
+            "code": code,
             "start_coordinate": parts[4] if len(parts) > 4 else None,
             "mid_coordinate": parts[5] if len(parts) > 5 else None,
             "end_coordinate": parts[6] if len(parts) > 6 and parts[6] else None,
             "set_number": parts[8] if len(parts) > 8 and parts[8] else None,
-            "home_setter_position": parts[9] if len(parts) > 9 else None,
-            "visiting_setter_position": parts[10] if len(parts) > 10 else None,
+            "home_setter_position": home_setter_position,
+            "visiting_setter_position": visiting_setter_position,
+            "setter_position": visiting_setter_position
+            if code and code.startswith("a")
+            else (home_setter_position if code and code.startswith("*") else None),
             "video_time": int(parts[12])
             if len(parts) > 12 and parts[12].isdigit()
             else None,

@@ -68,6 +68,5 @@ def plays_data() -> List[Dict]:
             "serving_team": None,
             "receiving_team": None,
             "rally_number": None,
-            "possesion_number": None,
         }
     ]
