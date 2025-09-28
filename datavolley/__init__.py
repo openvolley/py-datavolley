@@ -245,4 +245,66 @@ def read_dv(file_path: str) -> list[dict]:
 
         result.append(play_dict)
 
+    # Assign possession_number (rally number) per set, incrementing on serves
+    current_set = None
+    current_possession = 0
+    for play_dict in result:
+        play_set = play_dict.get("set_number")
+        if play_set != current_set:
+            current_set = play_set
+            current_possession = 0
+        if play_dict.get("skill") == "Serve":
+            current_possession += 1
+        play_dict["rally_number"] = current_possession
+
+    # Assign point_won_by per rally
+    rally_winners = {}
+    current_home_score = 0
+    current_visiting_score = 0
+    current_set = None
+
+    # Group plays by set and rally
+    rallies = {}
+    for play in result:
+        set_num = play.get("set_number")
+        rally_num = play.get("rally_number")
+        key = (set_num, rally_num)
+        if key not in rallies:
+            rallies[key] = []
+        rallies[key].append(play)
+
+    for (set_num, rally_num), plays_in_rally in sorted(rallies.items()):
+        if set_num != current_set:
+            current_set = set_num
+            current_home_score = 0
+            current_visiting_score = 0
+
+        start_home = current_home_score
+        start_visiting = current_visiting_score
+
+        # Find the point play
+        point_play = next(
+            (p for p in plays_in_rally if p.get("skill") == "Point"), None
+        )
+        if point_play:
+            end_home = int(point_play.get("home_team_score") or 0)
+            end_visiting = int(point_play.get("visiting_team_score") or 0)
+            if end_home > start_home:
+                winner = point_play.get("home_team")
+            elif end_visiting > start_visiting:
+                winner = point_play.get("visiting_team")
+            else:
+                winner = None  # tie or error
+            rally_winners[(set_num, rally_num)] = winner
+            current_home_score = end_home
+            current_visiting_score = end_visiting
+        else:
+            rally_winners[(set_num, rally_num)] = None
+
+    # Assign to plays
+    for play in result:
+        set_num = play.get("set_number")
+        rally_num = play.get("rally_number")
+        play["point_won_by"] = rally_winners.get((set_num, rally_num), None)
+
     return result
