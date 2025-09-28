@@ -10,11 +10,13 @@ from .core.set_calls import extract_setter_calls
 from .core.teams import extract_teams
 from .io.plays import plays_data
 from .utils.metadata import (
+    assign_rally_numbers_to_plays,  # Add this import (alternative function)
     extract_comments,
     extract_date,
     extract_set_scores,
     generate_match_id,
     get_match_result,
+    get_rally_number,  # Add this import
 )
 
 # Version info
@@ -33,6 +35,8 @@ __all__ = [
     "extract_set_scores",
     "get_match_result",
     "extract_comments",
+    "get_rally_number",  # Add to exports
+    "assign_rally_numbers_to_plays",  # Add to exports
     # Team functions
     "extract_teams",
     # Player functions
@@ -83,7 +87,7 @@ def load_dvw(file_path: str) -> dict:
                 "players": dict,
                 "attack_combinations": list,
                 "setter_calls": list,
-                "plays": list
+                "plays": list  # Now includes rally_number and point_won_by fields
             }
 
     Example:
@@ -91,6 +95,9 @@ def load_dvw(file_path: str) -> dict:
         >>> match_data = dv.load_dvw("path/to/match.dvw")
         >>> print(f"Match between {match_data['teams']['team_1']} vs {match_data['teams']['team_2']}")
         >>> print(f"Final score: {match_data['match_result']}")
+        >>> # Rally numbers are automatically included
+        >>> for play in match_data['plays'][:5]:
+        >>>     print(f"Rally {play['rally_number']}: {play['skill']}")
     """
     # Read the file
     try:
@@ -119,6 +126,10 @@ def load_dvw(file_path: str) -> dict:
 
     # Add calculated match result
     match_data["match_result"] = get_match_result(match_data["set_scores"])
+
+    # Always add rally numbers and point winners
+    if match_data.get("plays"):
+        match_data = get_rally_number(match_data)
 
     return match_data
 
@@ -162,12 +173,14 @@ def get_match_summary(match_data: dict) -> dict:
 def read_dv(file_path: str) -> list[dict]:
     """
     Load and parse a DVW file into a list of dictionaries suitable for DataFrame creation.
+    Rally numbers and point winners are automatically included.
 
     Args:
         file_path (str): Path to the DVW file
 
     Returns:
-        list[dict]: List of dictionaries containing play data with coordinate information
+        list[dict]: List of dictionaries containing play data with coordinate information,
+                   including rally_number and point_won_by fields
     """
     try:
         with open(file_path, "r", encoding="utf-8") as f:
@@ -178,7 +191,22 @@ def read_dv(file_path: str) -> list[dict]:
         with open(file_path, "r", encoding="latin-1") as f:
             content = f.read()
 
-    match_data = load_dvw(file_path)
+    # Load without rally numbers first since we'll process plays then add them
+    # First extract raw data
+    match_data = {
+        "filename": Path(file_path).stem,
+        "match_date": extract_date(content),
+        "match_id": generate_match_id(content),
+        "comments": extract_comments(content),
+        "teams": extract_teams(content),
+        "set_scores": extract_set_scores(content),
+        "players": extract_players(content),
+        "attack_combinations": extract_attack_combinations(content),
+        "setter_calls": extract_setter_calls(content),
+        "plays": extract_plays(content),
+    }
+    match_data["match_result"] = get_match_result(match_data["set_scores"])
+
     plays = match_data.get("plays", [])
     teams = match_data.get("teams", {})
     match_id = match_data.get("match_id")
@@ -245,66 +273,9 @@ def read_dv(file_path: str) -> list[dict]:
 
         result.append(play_dict)
 
-    # Assign possession_number (rally number) per set, incrementing on serves
-    current_set = None
-    current_possession = 0
-    for play_dict in result:
-        play_set = play_dict.get("set_number")
-        if play_set != current_set:
-            current_set = play_set
-            current_possession = 0
-        if play_dict.get("skill") == "Serve":
-            current_possession += 1
-        play_dict["rally_number"] = current_possession
-
-    # Assign point_won_by per rally
-    rally_winners = {}
-    current_home_score = 0
-    current_visiting_score = 0
-    current_set = None
-
-    # Group plays by set and rally
-    rallies = {}
-    for play in result:
-        set_num = play.get("set_number")
-        rally_num = play.get("rally_number")
-        key = (set_num, rally_num)
-        if key not in rallies:
-            rallies[key] = []
-        rallies[key].append(play)
-
-    for (set_num, rally_num), plays_in_rally in sorted(rallies.items()):
-        if set_num != current_set:
-            current_set = set_num
-            current_home_score = 0
-            current_visiting_score = 0
-
-        start_home = current_home_score
-        start_visiting = current_visiting_score
-
-        # Find the point play
-        point_play = next(
-            (p for p in plays_in_rally if p.get("skill") == "Point"), None
-        )
-        if point_play:
-            end_home = int(point_play.get("home_team_score") or 0)
-            end_visiting = int(point_play.get("visiting_team_score") or 0)
-            if end_home > start_home:
-                winner = point_play.get("home_team")
-            elif end_visiting > start_visiting:
-                winner = point_play.get("visiting_team")
-            else:
-                winner = None  # tie or error
-            rally_winners[(set_num, rally_num)] = winner
-            current_home_score = end_home
-            current_visiting_score = end_visiting
-        else:
-            rally_winners[(set_num, rally_num)] = None
-
-    # Assign to plays
-    for play in result:
-        set_num = play.get("set_number")
-        rally_num = play.get("rally_number")
-        play["point_won_by"] = rally_winners.get((set_num, rally_num), None)
+    # Always add rally numbers and point winners with actual team names
+    home_team = teams.get("team_1", "home")
+    visiting_team = teams.get("team_2", "visiting")
+    result = assign_rally_numbers_to_plays(result, home_team, visiting_team)
 
     return result
