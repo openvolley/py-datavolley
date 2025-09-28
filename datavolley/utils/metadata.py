@@ -219,8 +219,6 @@ def extract_comments(raw_content: str) -> str:
 
 # Updated functions for metadata.py to use team names and add new variables
 
-from typing import Optional
-
 
 def get_rally_number(result_content: dict) -> dict:
     """
