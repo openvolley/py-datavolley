@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "openvolley-pydatavolley"
+name = "openvolley-pydatavolley" 
 version = "0.1.4"
 authors = [{name = "Tyler Widdison", email = "tylerperrywiddison@gmail.com"}]
 description = "Extract data from DataVolley .dvw files and VolleyStation .vsm files"
@@ -32,6 +32,6 @@ include = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/py-datavolley"
-Repository = "https://github.com/yourusername/py-datavolley.git"
-Issues = "https://github.com/yourusername/py-datavolley/issues"
+Homepage = "https://github.com/openvolley/py-datavolley"
+Repository = "https://github.com/openvolley/py-datavolley.git"
+Issues = "https://github.com/openvolley/py-datavolley/issues"
