@@ -20,6 +20,34 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
+# Installation
+
+Ensure you have uv - this will make the process much easier.
+
+`uv add openvolley-pydatavolley`
+
+```python
+import datavolley as dv
+
+dv.read_dv('datavolley_path')
+
+# For convience you may want to use pandas
+import pandas as pd
+
+data = dv.read_dv('datavolley_path')
+
+pd.DataFrame(data)
+
+# Or polars
+import polars as pl
+
+data = dv.read_dv('datavolley_path')
+
+pl.DataFrame(data)
+```
+
+# Development
+
 1. Clone the repository:
 
    ```bash
