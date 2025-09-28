@@ -1,12 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
-name = "py-datavolley"
+name = "openvolley-pydatavolley"
 version = "0.1.4"
-authors = [{name = "Tyler Widdison"}]
-description = "Cousin to the R opnevolley packge"
+authors = [{name = "Tyler Widdison", email = "tylerperrywiddison@gmail.com"}]
+description = "Extract data from DataVolley .dvw files and VolleyStation .vsm files"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 dependencies = [
-    "ruff>=0.13.1",
+    "ruff>=0.13.2",
     "ty>=0.0.1a21",
 ]
 
@@ -15,3 +30,8 @@ include = [
     "datavolley/",
     "datavolley/data/*.dvw"
 ]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/py-datavolley"
+Repository = "https://github.com/yourusername/py-datavolley.git"
+Issues = "https://github.com/yourusername/py-datavolley/issues"
