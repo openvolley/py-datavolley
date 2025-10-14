@@ -1,5 +1,5 @@
 <h1>
-  <img src="https://avatars.githubusercontent.com/u/61638092?s=48&v=4" alt="Avatar" style="vertical-align: middle;"> py-datavolley 
+  <img src="https://avatars.githubusercontent.com/u/61638092?s=48&v=4" alt="Avatar" style="vertical-align: middle; background-color: #969393ff; border-radius: 8px;"> py-datavolley 
 </h1>
 
 A Python package for parsing and analyzing volleyball scouting data from DataVolley files (\*.dvw).
