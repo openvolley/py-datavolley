@@ -32,6 +32,7 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
         "player_name": None,
         "player_id": None,
         "skill": None,
+        "skill_type": None,
         "evaluation_code": None,
         "set_code": None,
         "start_zone": None,
@@ -40,6 +41,7 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
         "num_players_numeric": None,
         "skill_subtype": None,
         "attack_code": None,
+        "custom_code": None,
     }
 
     # Extract Team using inline team extraction (avoid circular imports)
@@ -84,7 +86,7 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
             parsed["player_name"] = player["full_name"]
             parsed["player_id"] = player["player_id"]
 
-    # Extract Skill (position 3)
+    # Extract Skill (position 3, or position 1 for point codes)
     if len(code) > 3:
         skill_mapping = {
             "S": "Serve",
@@ -96,8 +98,12 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
             "F": "Freeball",
             "p": "Point",
         }
-        skill_code = code[3]
-        parsed["skill"] = skill_mapping.get(skill_code, "")
+        # Point codes have format *p01:00 where 'p' is at position 1
+        if len(code) > 1 and code[1] == "p":
+            parsed["skill"] = "Point"
+        else:
+            skill_code = code[3]
+            parsed["skill"] = skill_mapping.get(skill_code, "")
 
     # Extract Evaluation (position 4)
     if len(code) > 4:
@@ -126,11 +132,83 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
     if len(code) > 11:
         parsed["end_subzone"] = code[11] if code[11] != "~" else None
 
+    # Extract custom code (after last ~ and before end of string)
+    if len(code) > 14:
+        last_tilde_idx = code.rfind("~")
+        if last_tilde_idx != -1 and last_tilde_idx < len(code) - 1:
+            potential_custom = code[last_tilde_idx + 1 :]
+            if potential_custom and potential_custom != "":
+                parsed["custom_code"] = potential_custom
+
+    # Extract skill_type (position 4) - full description like "High ball attack"
+    if parsed["skill"] and len(code) > 4:
+        parsed["skill_type"] = extract_skill_type(code, parsed["skill"])
+
     # Extract Skill subtype
     if parsed["skill"]:
         parsed["skill_subtype"] = extract_skill_subtype(code, parsed["skill"])
 
     return parsed
+
+
+def extract_skill_type(code: str, skill: str) -> Optional[str]:
+    """
+    Extract skill type description from position 4 of the code.
+
+    This returns descriptions like "High ball attack", "Jump-float serve", etc.
+
+    Args:
+        code: The play code
+        skill: The skill name (Serve, Reception, Attack, etc.)
+
+    Returns:
+        Skill type description or None
+    """
+    # Point and Freeball don't have type codes
+    if skill in ["Point", "Freeball", ""]:
+        return None
+
+    if len(code) <= 4:
+        return None
+
+    type_code = code[4]
+
+    if skill == "Serve":
+        serve_type_map = {
+            "H": "Float serve",
+            "M": "Jump-float serve",
+            "Q": "Jump serve",
+            "T": "Topspin serve",
+            "O": "Other serve",
+            "N": "Hybrid serve",
+        }
+        return serve_type_map.get(type_code)
+
+    elif skill == "Reception":
+        reception_type_map = {
+            "H": "Float serve reception",
+            "M": "Jump-float serve reception",
+            "Q": "Jump serve reception",
+            "T": "Topspin serve reception",
+            "O": "Other serve reception",
+            "N": "Hybrid serve reception",
+        }
+        return reception_type_map.get(type_code)
+
+    elif skill in ["Attack", "Block", "Dig", "Set"]:
+        attack_type_map = {
+            "H": f"High ball {skill.lower()}",
+            "M": f"Half ball {skill.lower()}",
+            "Q": f"Quick ball {skill.lower()}",
+            "T": f"Head ball {skill.lower()}",
+            "U": f"Super ball {skill.lower()}",
+            "F": f"Fast ball {skill.lower()}",
+            "N": f"Slide ball {skill.lower()}",
+            "O": f"Other {skill.lower()}",
+        }
+        return attack_type_map.get(type_code)
+
+    return None
 
 
 def extract_skill_subtype(code: str, skill: str) -> Optional[str]:
