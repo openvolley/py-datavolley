@@ -33,9 +33,6 @@ Thumbs.db
 # PyPI credentials
 .pypirc
 
-# Badge SVG (will be hosted on GitHub)
-!openvolley-badge.svg
-
 # Programes
 opencode.exe
 Alacritty-v0.15.1-portable.exe
