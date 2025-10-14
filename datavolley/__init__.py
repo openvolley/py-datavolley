@@ -41,7 +41,7 @@ except ImportError:
 
 
 # Version info
-__version__ = "0.1.5"
+__version__ = "0.2.1"
 __author__ = "Tyler Widdison"
 
 # Explicitly define what's available when someone imports the package
