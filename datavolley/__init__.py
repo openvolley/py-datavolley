@@ -1,6 +1,7 @@
 # datavolley/__init__.py
 from pathlib import Path
 
+from .core.attack_codes import dv_attack_code2desc
 from .core.attack_combos import extract_attack_combinations
 from .core.code import extract_skill_subtype, parse_play_code
 from .core.coordinates import dv_index2xy
@@ -10,14 +11,34 @@ from .core.set_calls import extract_setter_calls
 from .core.teams import extract_teams
 from .io.plays import plays_data
 from .utils.metadata import (
-    assign_rally_numbers_to_plays,  # Add this import (alternative function)
+    assign_rally_numbers_to_plays,
     extract_comments,
     extract_date,
     extract_set_scores,
     generate_match_id,
     get_match_result,
-    get_rally_number,  # Add this import
+    get_rally_number,
 )
+
+try:
+    from .plot.court import dv_court, dv_heatmap
+
+    _HAS_PLOT = True
+except ImportError:
+    _HAS_PLOT = False
+
+    def dv_court(*args, **kwargs):
+        raise ImportError(
+            "Plotting functions require optional dependencies. "
+            "Install them with: uv add openvolley-pydatavolley[plot]"
+        )
+
+    def dv_heatmap(*args, **kwargs):
+        raise ImportError(
+            "Plotting functions require optional dependencies. "
+            "Install them with: uv add openvolley-pydatavolley[plot]"
+        )
+
 
 # Version info
 __version__ = "0.1.5"
@@ -35,8 +56,8 @@ __all__ = [
     "extract_set_scores",
     "get_match_result",
     "extract_comments",
-    "get_rally_number",  # Add to exports
-    "assign_rally_numbers_to_plays",  # Add to exports
+    "get_rally_number",
+    "assign_rally_numbers_to_plays",
     # Team functions
     "extract_teams",
     # Player functions
@@ -54,6 +75,11 @@ __all__ = [
     "dv_index2xy",
     # Summary function
     "get_match_summary",
+    # Attack code helpers
+    "dv_attack_code2desc",
+    # Plotting functions
+    "dv_court",
+    "dv_heatmap",
 ]
 
 
@@ -239,6 +265,7 @@ def read_dv(file_path: str) -> list[dict]:
                 play_dict["player_name"] = parsed_code.get("player_name")
                 play_dict["player_id"] = parsed_code.get("player_id")
                 play_dict["skill"] = parsed_code.get("skill")
+                play_dict["skill_type"] = parsed_code.get("skill_type")
                 play_dict["skill_subtype"] = parsed_code.get("skill_subtype")
                 play_dict["evaluation_code"] = parsed_code.get("evaluation_code")
                 play_dict["attack_code"] = parsed_code.get("attack_code")
@@ -250,6 +277,8 @@ def read_dv(file_path: str) -> list[dict]:
                 play_dict["num_players_numeric"] = parsed_code.get(
                     "num_players_numeric"
                 )
+                if parsed_code.get("custom_code"):
+                    play_dict["custom_code"] = parsed_code.get("custom_code")
 
         start_coord = play.get("start_coordinate")
         if start_coord is not None:

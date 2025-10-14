@@ -21,6 +21,7 @@ def plays_data() -> List[Dict]:
             "player_name": None,
             "player_id": None,
             "skill": None,
+            "skill_type": None,
             "skill_subtype": None,
             "evaluation_code": None,
             "setter_position": None,

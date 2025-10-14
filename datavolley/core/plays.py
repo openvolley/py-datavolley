@@ -43,9 +43,18 @@ def parse_play_line(line: str, line_number: int) -> Optional[Dict]:
         home_setter_position = parts[9] if len(parts) > 9 else None
         visiting_setter_position = parts[10] if len(parts) > 10 else None
 
+        custom_code = None
+        if code and len(code) > 14:
+            last_tilde_idx = code.rfind("~")
+            if last_tilde_idx != -1 and last_tilde_idx < len(code) - 1:
+                potential_custom = code[last_tilde_idx + 1 :]
+                if potential_custom and potential_custom != "":
+                    custom_code = potential_custom
+
         play_data = {
             "line_number": line_number,
             "code": code,
+            "custom_code": custom_code,
             "start_coordinate": parts[4] if len(parts) > 4 else None,
             "mid_coordinate": parts[5] if len(parts) > 5 else None,
             "end_coordinate": parts[6] if len(parts) > 6 and parts[6] else None,
@@ -58,7 +67,6 @@ def parse_play_line(line: str, line_number: int) -> Optional[Dict]:
             "video_time": int(parts[12])
             if len(parts) > 12 and parts[12].isdigit()
             else None,
-            # "raw_data": parts,
         }
 
         # Add home team rotation data [14:20] -> home_p1, home_p2, ..., home_p6
