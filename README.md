@@ -1,4 +1,4 @@
-# <img src="https://avatars.githubusercontent.com/u/61638092?s=48&v=4" alt="Avatar" style="vertical-align: middle; background-color: #969393ff; border-radius: 8px;"> py-datavolley
+# <img src="https://avatars.githubusercontent.com/u/61638092?s=48&v=4" alt="Avatar" style="vertical-align: middle; border-radius: 8px; background-color: #969393ff;"> py-datavolley
 
 A Python package for parsing and analyzing volleyball scouting data from DataVolley files (\*.dvw).
 
@@ -73,6 +73,7 @@ import datavolley as dv
 
 # Load a match
 data = dv.read_dv('path/to/match.dvw')
+# data = dv.read_dv(dv.example_file())
 
 # Access play data
 for play in data[:5]:
@@ -326,8 +327,8 @@ plt.savefig('x5_attacks.png', dpi=150)
 
 <table>
   <tr>
-    <td><img src="x5_attack_trajectories.png" alt="X5 Attack Trajectories" width="350"/></td>
-    <td><img src="attack_comparison.png" alt="Attack Comparison" width="350"/></td>
+    <td><img src="examples/x5_attack_trajectories.png" alt="X5 Attack Trajectories" width="350"/></td>
+    <td><img src="examples/attack_comparison.png" alt="Attack Comparison" width="350"/></td>
   </tr>
   <tr>
     <td align="center"><b>X5 Attack Trajectories</b><br/>Shows ball path from set to landing</td>
