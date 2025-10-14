@@ -1,4 +1,4 @@
-# <img src="examples/openvolley-badge.svg" alt="openvolley" width="32"> py-datavolley
+# py-datavolley
 
 ### TLDR;
 
@@ -11,7 +11,7 @@ print(data)
 ```
 
 <details>
-<summary style="color: #f1aff6;">Will return (this is a sample and not the entire example file) </summary>
+<summary>Will return (this is a sample and not the entire example file) </summary>
 
 ```json
 [
