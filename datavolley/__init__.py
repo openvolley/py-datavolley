@@ -20,26 +20,6 @@ from .utils.metadata import (
     get_rally_number,
 )
 
-try:
-    from .plot.court import dv_court, dv_heatmap
-
-    _HAS_PLOT = True
-except ImportError:
-    _HAS_PLOT = False
-
-    def dv_court(*args, **kwargs):
-        raise ImportError(
-            "Plotting functions require optional dependencies. "
-            "Install them with: uv add openvolley-pydatavolley[plot]"
-        )
-
-    def dv_heatmap(*args, **kwargs):
-        raise ImportError(
-            "Plotting functions require optional dependencies. "
-            "Install them with: uv add openvolley-pydatavolley[plot]"
-        )
-
-
 # Version info
 __version__ = "0.2.1"
 __author__ = "Tyler Widdison"
@@ -77,9 +57,6 @@ __all__ = [
     "get_match_summary",
     # Attack code helpers
     "dv_attack_code2desc",
-    # Plotting functions
-    "dv_court",
-    "dv_heatmap",
 ]
 
 
