@@ -21,7 +21,7 @@ from .utils.metadata import (
 )
 
 # Version info
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 __author__ = "Tyler Widdison"
 
 # Explicitly define what's available when someone imports the package
