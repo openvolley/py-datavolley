@@ -17,16 +17,8 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "matplotlib>=3.10.7",
-    "ruff>=0.13.2",
-    "ty>=0.0.1a21",
-]
-
-[project.optional-dependencies]
-plot = [
-    "matplotlib>=3.5.0",
-    "numpy>=2.3.3",
-    "shapely>=2.1.2",
+    "ruff>=0.14.9",
+    "ty>=0.0.1a34",
 ]
 
 [tool.hatch.build.targets.wheel]
