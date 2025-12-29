@@ -9,6 +9,7 @@ from .core.players import extract_players
 from .core.plays import extract_plays, extract_score_from_code
 from .core.set_calls import extract_setter_calls
 from .core.teams import extract_teams
+from .core.xml_to_dvw import xml_to_dvw
 from .io.plays import plays_data
 from .utils.metadata import (
     assign_rally_numbers_to_plays,
@@ -21,7 +22,7 @@ from .utils.metadata import (
 )
 
 # Version info
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 __author__ = "Tyler Widdison"
 
 # Explicitly define what's available when someone imports the package
@@ -57,6 +58,8 @@ __all__ = [
     "get_match_summary",
     # Attack code helpers
     "dv_attack_code2desc",
+    # Build dvw
+    "xml_to_dvw",
 ]
 
 
