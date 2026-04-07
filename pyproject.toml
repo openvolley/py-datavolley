@@ -17,8 +17,8 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "ruff>=0.14.9",
-    "ty>=0.0.1a34",
+    "ruff>=0.15.9",
+    "ty>=0.0.29",
 ]
 
 [tool.hatch.build.targets.wheel]
