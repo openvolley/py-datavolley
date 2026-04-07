@@ -1,5 +1,3 @@
-# datavolley/io/plays.py
-
 from typing import Dict, List
 
 

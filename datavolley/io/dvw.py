@@ -1,6 +1,3 @@
-# datavolley\io\dvw.py
-
-
 def read_dvw(filepath: str):
     """
     Read a DataVolley DVW file.

@@ -2,7 +2,7 @@
 
 A Python package for parsing and analyzing volleyball scouting data from DataVolley files (\*.dvw).
 
-Rebuilt [pydatavolley](https://github.com/openvolley/pydatavolley) with modern Python tooling ([Astral ecosystem](https://docs.astral.sh/)) for improved experience: UV for package management, Ruff for linting/formatting and [Ty](https://github.com/astral-sh/ty) for type checking.
+We modernized [pydatavolley](https://github.com/openvolley/pydatavolley) with a stronger Python workflow. It now uses [Pydantic](https://docs.pydantic.dev/latest/concepts/types/) for more reliable type validation, plus the [Astral](https://docs.astral.sh/) [toolchain—UV](https://docs.astral.sh/uv/) for package management, [Ruff](https://docs.astral.sh/ruff/) for linting/formatting, and [Ty](https://docs.astral.sh/ty/) for type checking.
 
 ```bash
 mkdir my-analysis
@@ -24,6 +24,27 @@ if __name__ == "__main__":
     print(data)
 
 ```
+
+Type validation can be controlled per call:
+
+```python
+import datavolley as dv
+
+plays, issues = dv.read_dv(
+    dv.example_file(),
+    validation_mode=dv.ValidationMode.LENIENT,
+    normalize_types=True,
+    return_issues=True,
+)
+
+print(f"plays={len(plays)} issues={len(issues)}")
+```
+
+The same options are available in `load_dvw(...)`, and issues are returned as `(match_data, issues)`.
+
+- `validation_mode`: `lenient` (default) continues parsing and collects issues, `strict` raises on validation errors.
+- `normalize_types`: converts numeric-like fields to numeric types while preserving nullable behavior for missing values.
+- `return_issues`: returns validation issues with field/index metadata for downstream quality checks.
 
 <details>
 <summary>Will return (this is a sample and not the entire example file) </summary>

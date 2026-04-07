@@ -392,7 +392,7 @@ def create_play_dict(
         "serving_team": serving_team,
         "receiving_team": receiving_team,
         "rally_number": None,  # Not directly available in VSM
-        "possesion_number": None,  # Not directly available in VSM
+        "possession_number": None,  # Not directly available in VSM
     }
 
     return play_dict

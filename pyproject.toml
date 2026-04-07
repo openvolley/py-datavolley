@@ -17,6 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
+    "pydantic>=2.12.5",
     "ruff>=0.15.9",
     "ty>=0.0.29",
 ]

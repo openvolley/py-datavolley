@@ -1,5 +1,6 @@
 # datavolley/__init__.py
 from pathlib import Path
+from typing import Any
 
 from .core.attack_codes import dv_attack_code2desc
 from .core.attack_combos import extract_attack_combinations
@@ -11,6 +12,7 @@ from .core.set_calls import extract_setter_calls
 from .core.teams import extract_teams
 from .core.xml_to_dvw import xml_to_dvw
 from .io.plays import plays_data
+from .types import ValidationMode, validate_and_normalize_plays
 from .utils.metadata import (
     assign_rally_numbers_to_plays,
     extract_comments,
@@ -60,6 +62,9 @@ __all__ = [
     "dv_attack_code2desc",
     # Build dvw
     "xml_to_dvw",
+    # Type controls
+    "ValidationMode",
+    "validate_and_normalize_plays",
 ]
 
 
@@ -73,7 +78,13 @@ def example_file() -> str:
     return str(Path(__file__).parent / "data" / "example_match.dvw")
 
 
-def load_dvw(file_path: str) -> dict:
+def load_dvw(
+    file_path: str,
+    *,
+    validation_mode: ValidationMode | str = ValidationMode.LENIENT,
+    normalize_types: bool = False,
+    return_issues: bool = False,
+) -> dict[str, Any] | tuple[dict[str, Any], list[dict[str, Any]]]:
     """
     Load and parse a DVW file into a comprehensive match data dictionary.
 
@@ -95,6 +106,7 @@ def load_dvw(file_path: str) -> dict:
                 "setter_calls": list,
                 "plays": list  # Now includes rally_number and point_won_by fields
             }
+            If return_issues=True, returns a tuple of (match_data, issues).
 
     Example:
         >>> import datavolley as dv
@@ -137,6 +149,16 @@ def load_dvw(file_path: str) -> dict:
     if match_data.get("plays"):
         match_data = get_rally_number(match_data)
 
+    validated_plays, issues = validate_and_normalize_plays(
+        match_data.get("plays", []),
+        mode=validation_mode,
+        normalize=normalize_types,
+    )
+    match_data["plays"] = validated_plays
+
+    if return_issues:
+        return match_data, [issue.model_dump() for issue in issues]
+
     return match_data
 
 
@@ -176,7 +198,13 @@ def get_match_summary(match_data: dict) -> dict:
     }
 
 
-def read_dv(file_path: str) -> list[dict]:
+def read_dv(
+    file_path: str,
+    *,
+    validation_mode: ValidationMode | str = ValidationMode.LENIENT,
+    normalize_types: bool = False,
+    return_issues: bool = False,
+) -> list[dict[str, Any]] | tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """
     Load and parse a DVW file into a list of dictionaries suitable for DataFrame creation.
     Rally numbers and point winners are automatically included.
@@ -186,7 +214,8 @@ def read_dv(file_path: str) -> list[dict]:
 
     Returns:
         list[dict]: List of dictionaries containing play data with coordinate information,
-                   including rally_number and point_won_by fields
+            including rally_number and point_won_by fields.
+            If return_issues=True, returns a tuple of (plays, issues).
     """
     try:
         with open(file_path, "r", encoding="utf-8") as f:
@@ -287,4 +316,11 @@ def read_dv(file_path: str) -> list[dict]:
     visiting_team = teams.get("team_2", "visiting")
     result = assign_rally_numbers_to_plays(result, home_team, visiting_team)
 
-    return result
+    validated_plays, issues = validate_and_normalize_plays(
+        result, mode=validation_mode, normalize=normalize_types
+    )
+
+    if return_issues:
+        return validated_plays, [issue.model_dump() for issue in issues]
+
+    return validated_plays
