@@ -8,15 +8,21 @@ Rebuilt [pydatavolley](https://github.com/openvolley/pydatavolley) with modern P
 mkdir my-analysis
 cd my-analysis
 uv init
-uv add ruff
-uv add ty
 uv add openvolley-pydatavolley
 ```
 
 ```python
-# data = dv.read_dv(path_of_dvw_file)
-data = dv.read_dv(dv.example_file())
-print(data)
+import datavolley as dv
+
+
+def main():
+    return dv.read_dv(dv.example_file())
+
+
+if __name__ == "__main__":
+    data = main()
+    print(data)
+
 ```
 
 <details>
