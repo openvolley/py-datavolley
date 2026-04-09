@@ -1,7 +1,5 @@
-# datavolley/core/code.py
-
 import re
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 
 def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
@@ -25,7 +23,7 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
     if not code or len(code) < 4:
         return None
 
-    parsed = {
+    parsed: Dict[str, Union[str, int, None]] = {
         "code": code,
         "team": None,
         "player_number": None,

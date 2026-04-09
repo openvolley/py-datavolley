@@ -1,5 +1,3 @@
-# datavolley/core/coordinates.py
-
 import math
 from typing import List, Tuple, Union
 

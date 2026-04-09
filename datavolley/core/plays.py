@@ -1,5 +1,3 @@
-# datavolley/core/plays.py
-
 import re
 from typing import Dict, List, Optional
 

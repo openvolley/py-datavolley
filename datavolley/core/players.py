@@ -1,5 +1,3 @@
-# datavolley/core/players.py
-
 import random
 import re
 import string

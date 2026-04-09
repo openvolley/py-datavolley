@@ -1,9 +1,9 @@
-"""Helper functions for attack code descriptions and mappings."""
-
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 
-def dv_attack_code2desc(code: Union[str, List[str]]) -> Union[str, Dict[str, str]]:
+def dv_attack_code2desc(
+    code: Union[str, List[str]],
+) -> Union[Optional[str], Dict[str, Optional[str]]]:
     """
     Get nominal descriptions for standard attack codes.
 
@@ -53,6 +53,6 @@ def dv_attack_code2desc(code: Union[str, List[str]]) -> Union[str, Dict[str, str
     }
 
     if isinstance(code, str):
-        return desc_map.get(code, None)
+        return desc_map.get(code)
     else:
-        return {c: desc_map.get(c, None) for c in code}
+        return {c: desc_map.get(c) for c in code}
