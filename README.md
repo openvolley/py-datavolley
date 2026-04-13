@@ -115,6 +115,9 @@ The same options are available in `load_dvw(...)`, and issues are returned as `(
 
 </details>
 
+
+# Added section for AI agents
+Work in progress
 ## Skills
 
 The skills knowledge base now lives under `docs/skills/` and replaces the previous root-level scratch file.

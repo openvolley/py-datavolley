@@ -748,19 +748,21 @@ def process_instances_to_plays(
             new_set = int(labels.get("Set", str(current_set)))
             if new_set != current_set:
                 # Generate set end marker
-                plays.append({
-                    "type": "set_end",
-                    "set_number": current_set,
-                    "home_setter_pos": ROTATION_TO_SETTER_POSITION.get(
-                        current_home_rot, 1
-                    ),
-                    "visit_setter_pos": ROTATION_TO_SETTER_POSITION.get(
-                        current_visit_rot, 1
-                    ),
-                    "video_time": start_time,
-                    "home_lineup": home_jerseys,
-                    "visit_lineup": visit_jerseys,
-                })
+                plays.append(
+                    {
+                        "type": "set_end",
+                        "set_number": current_set,
+                        "home_setter_pos": ROTATION_TO_SETTER_POSITION.get(
+                            current_home_rot, 1
+                        ),
+                        "visit_setter_pos": ROTATION_TO_SETTER_POSITION.get(
+                            current_visit_rot, 1
+                        ),
+                        "video_time": start_time,
+                        "home_lineup": home_jerseys,
+                        "visit_lineup": visit_jerseys,
+                    }
+                )
                 current_set = new_set
                 # Reset scores for new set
                 home_score = 0
@@ -784,22 +786,24 @@ def process_instances_to_plays(
                 current_visit_rot = new_visit_rot
 
                 # Add rotation indicator
-                plays.append({
-                    "type": "rotation",
-                    "home_rotation": current_home_rot,
-                    "visit_rotation": current_visit_rot,
-                    "home_setter_pos": ROTATION_TO_SETTER_POSITION.get(
-                        current_home_rot, 1
-                    ),
-                    "visit_setter_pos": ROTATION_TO_SETTER_POSITION.get(
-                        current_visit_rot, 1
-                    ),
-                    "set_number": current_set,
-                    "video_time": start_time,
-                    "home_lineup": home_jerseys,
-                    "visit_lineup": visit_jerseys,
-                    "is_first_rotation": is_first_rotation_of_set,
-                })
+                plays.append(
+                    {
+                        "type": "rotation",
+                        "home_rotation": current_home_rot,
+                        "visit_rotation": current_visit_rot,
+                        "home_setter_pos": ROTATION_TO_SETTER_POSITION.get(
+                            current_home_rot, 1
+                        ),
+                        "visit_setter_pos": ROTATION_TO_SETTER_POSITION.get(
+                            current_visit_rot, 1
+                        ),
+                        "set_number": current_set,
+                        "video_time": start_time,
+                        "home_lineup": home_jerseys,
+                        "visit_lineup": visit_jerseys,
+                        "is_first_rotation": is_first_rotation_of_set,
+                    }
+                )
                 need_rotation_lines = False
                 is_first_rotation_of_set = False  # Only first rotation gets >LUp
 
@@ -926,7 +930,7 @@ def process_instances_to_plays(
                     if "-" in attack_combo
                     else attack_combo[:2]
                 )
-                play["attack_combo"] = combo_prefix, "~~"
+                play["attack_combo"] = combo_prefix
             else:
                 # Fallback to Middle Route
                 middle_route = labels.get("Middle Route", "")
@@ -994,16 +998,18 @@ def process_instances_to_plays(
             else:
                 continue
 
-            plays.append({
-                "type": "point",
-                "point_code": f"{point_prefix}p{home_score:02d}:{away_score:02d}",
-                "home_setter_pos": play["home_setter_pos"],
-                "visit_setter_pos": play["visit_setter_pos"],
-                "set_number": current_set,
-                "video_time": start_time,
-                "home_lineup": home_jerseys,
-                "visit_lineup": visit_jerseys,
-            })
+            plays.append(
+                {
+                    "type": "point",
+                    "point_code": f"{point_prefix}p{home_score:02d}:{away_score:02d}",
+                    "home_setter_pos": play["home_setter_pos"],
+                    "visit_setter_pos": play["visit_setter_pos"],
+                    "set_number": current_set,
+                    "video_time": start_time,
+                    "home_lineup": home_jerseys,
+                    "visit_lineup": visit_jerseys,
+                }
+            )
 
     return plays
 

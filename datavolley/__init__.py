@@ -12,7 +12,7 @@ from .core.set_calls import extract_setter_calls
 from .core.teams import extract_teams
 from .core.xml_to_dvw import xml_to_dvw
 from .io.plays import plays_data
-from .types import ValidationMode, validate_and_normalize_plays
+from .types import MatchData, ValidationMode, validate_and_normalize_plays
 from .utils.metadata import (
     assign_rally_numbers_to_plays,
     extract_comments,
@@ -24,7 +24,7 @@ from .utils.metadata import (
 )
 
 # Version info
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 __author__ = "Tyler Widdison"
 
 # Explicitly define what's available when someone imports the package
@@ -84,7 +84,7 @@ def load_dvw(
     validation_mode: ValidationMode | str = ValidationMode.LENIENT,
     normalize_types: bool = False,
     return_issues: bool = False,
-) -> dict[str, Any] | tuple[dict[str, Any], list[dict[str, Any]]]:
+) -> MatchData | tuple[MatchData, list[dict[str, Any]]]:
     """
     Load and parse a DVW file into a comprehensive match data dictionary.
 
@@ -128,8 +128,7 @@ def load_dvw(
         with open(file_path, "r", encoding="latin-1") as f:
             content = f.read()
 
-    # Extract all data
-    match_data = {
+    match_data: MatchData = {
         "filename": Path(file_path).stem,
         "match_date": extract_date(content),
         "match_id": generate_match_id(content),
@@ -142,10 +141,8 @@ def load_dvw(
         "plays": extract_plays(content),
     }
 
-    # Add calculated match result
     match_data["match_result"] = get_match_result(match_data["set_scores"])
 
-    # Always add rally numbers and point winners
     if match_data.get("plays"):
         match_data = get_rally_number(match_data)
 
@@ -162,7 +159,7 @@ def load_dvw(
     return match_data
 
 
-def get_match_summary(match_data: dict) -> dict:
+def get_match_summary(match_data: MatchData) -> dict:
     """
     Get a summary of key match information.
 
@@ -228,7 +225,7 @@ def read_dv(
 
     # Load without rally numbers first since we'll process plays then add them
     # First extract raw data
-    match_data = {
+    match_data: MatchData = {
         "filename": Path(file_path).stem,
         "match_date": extract_date(content),
         "match_id": generate_match_id(content),
@@ -242,9 +239,9 @@ def read_dv(
     }
     match_data["match_result"] = get_match_result(match_data["set_scores"])
 
-    plays = match_data.get("plays", [])
-    teams = match_data.get("teams", {})
-    match_id = match_data.get("match_id")
+    plays = match_data["plays"]
+    teams = match_data["teams"]
+    match_id = match_data["match_id"]
 
     result = []
     template = plays_data()[0]
