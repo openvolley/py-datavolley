@@ -1,3 +1,4 @@
+from .match import MatchData
 from .plays import (
     ParseIssue,
     PlayNormalized,
@@ -7,6 +8,7 @@ from .plays import (
 )
 
 __all__ = [
+    "MatchData",
     "ParseIssue",
     "PlayRaw",
     "PlayNormalized",

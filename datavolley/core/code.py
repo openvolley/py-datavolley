@@ -1,8 +1,29 @@
+from __future__ import annotations
+
 import re
-from typing import Dict, Optional, Union
+from typing import TypedDict
 
 
-def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
+class ParsedPlayCode(TypedDict):
+    code: str
+    team: str | None
+    player_number: int | None
+    player_name: str | None
+    player_id: str | None
+    skill: str | None
+    skill_type: str | None
+    evaluation_code: str | None
+    set_code: str | None
+    start_zone: str | None
+    end_zone: str | None
+    end_subzone: str | None
+    num_players_numeric: int | None
+    skill_subtype: str | None
+    attack_code: str | None
+    custom_code: str | None
+
+
+def parse_play_code(raw_content: str, code: str) -> ParsedPlayCode | None:
     """
     Parse a volleyball play code into its components.
 
@@ -23,7 +44,7 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
     if not code or len(code) < 4:
         return None
 
-    parsed: Dict[str, Union[str, int, None]] = {
+    parsed: ParsedPlayCode = {
         "code": code,
         "team": None,
         "player_number": None,
@@ -64,7 +85,8 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
             (
                 p
                 for p in players["home"]
-                if int(p["player_number"]) == parsed["player_number"]
+                if p["player_number"] is not None
+                and int(p["player_number"]) == parsed["player_number"]
             ),
             None,
         )
@@ -76,7 +98,8 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
             (
                 p
                 for p in players["visiting"]
-                if int(p["player_number"]) == parsed["player_number"]
+                if p["player_number"] is not None
+                and int(p["player_number"]) == parsed["player_number"]
             ),
             None,
         )
@@ -149,7 +172,7 @@ def parse_play_code(raw_content: str, code: str) -> Optional[Dict]:
     return parsed
 
 
-def extract_skill_type(code: str, skill: str) -> Optional[str]:
+def extract_skill_type(code: str, skill: str) -> str | None:
     """
     Extract skill type description from position 4 of the code.
 
@@ -209,7 +232,7 @@ def extract_skill_type(code: str, skill: str) -> Optional[str]:
     return None
 
 
-def extract_skill_subtype(code: str, skill: str) -> Optional[str]:
+def extract_skill_subtype(code: str, skill: str) -> str | None:
     """
     Extract skill subtype from the code based on skill type.
 
@@ -290,7 +313,7 @@ def extract_skill_subtype(code: str, skill: str) -> Optional[str]:
     return None
 
 
-def _extract_teams_lightweight(raw_content: str) -> Dict:
+def _extract_teams_lightweight(raw_content: str) -> dict[str, str | None]:
     """
     Lightweight team extraction to avoid circular imports.
     """
@@ -316,7 +339,9 @@ def _extract_teams_lightweight(raw_content: str) -> Dict:
     return teams_data
 
 
-def _extract_players_lightweight(raw_content: str) -> Dict:
+def _extract_players_lightweight(
+    raw_content: str,
+) -> dict[str, list[dict[str, str | None]]]:
     """
     Lightweight player extraction to avoid circular imports.
     """
@@ -341,7 +366,9 @@ def _extract_players_lightweight(raw_content: str) -> Dict:
     return players
 
 
-def _parse_player_lines_lightweight(section_content: str):
+def _parse_player_lines_lightweight(
+    section_content: str,
+) -> list[dict[str, str | None]]:
     """
     Lightweight player line parsing.
     """

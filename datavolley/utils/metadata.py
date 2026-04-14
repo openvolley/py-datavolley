@@ -1,12 +1,17 @@
 # datavolley\utils\metadata.py
 
+from __future__ import annotations
+
 import re
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from datavolley.types import MatchData
 
 
-def extract_date(raw_content: str) -> Optional[datetime]:
+def extract_date(raw_content: str) -> datetime | None:
     """
     Extract match date from DVW file content.
 
@@ -220,7 +225,7 @@ def extract_comments(raw_content: str) -> str:
 # Updated functions for metadata.py to use team names and add new variables
 
 
-def get_rally_number(result_content: dict) -> dict:
+def get_rally_number(result_content: MatchData) -> MatchData:
     """
     Assign rally numbers (possession numbers) per set, incrementing on serves.
     Also determines point winners, phases, and possession tracking for each rally.
@@ -407,7 +412,7 @@ def get_rally_number(result_content: dict) -> dict:
 
 # Alternative simpler version if you just need to process a list of plays directly
 def assign_rally_numbers_to_plays(
-    plays: list, home_team: Optional[str] = None, visiting_team: Optional[str] = None
+    plays: list, home_team: str | None = None, visiting_team: str | None = None
 ) -> list:
     """
     Simplified version that works directly with a list of plays.
