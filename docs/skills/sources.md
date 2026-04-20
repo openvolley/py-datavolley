@@ -7,6 +7,7 @@ If a source is private, unstable, or inaccessible, keep it listed with a short n
 
 - DataVolley handbook: `https://bli.is/wp-content/uploads/2019/09/dvwin2007_handbook.pdf`
 - DataVolley Media handbook: `https://dataprojectwebsoftware.blob.core.windows.net/software/dvw4media/DataVolleyMedia_handbook.pdf`
+- Volleymetrics Data Volley Explaiation: `https://drive.google.com/file/d/1qkhHlrp92CswY0_5nGUq3Mxn20l-hrcO/view`
 
 ## OpenVolley Snippets
 
@@ -43,5 +44,4 @@ If a source is private, unstable, or inaccessible, keep it listed with a short n
 
 ## Known Gaps
 
-- RPubs sources may require authentication and were not reliably retrievable in automation.
-- Some linked notebooks or app pages are archived and may require manual verification.
+- [RPubs sources may require authentication and were not reliably retrievable in automation.](https://rpubs.com/tylerwiddison/DaytonReview2023)
