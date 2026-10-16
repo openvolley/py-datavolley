@@ -1,7 +1,4 @@
-from typing import Dict, List
-
-
-def plays_data() -> List[Dict]:
+def plays_data() -> list[dict]:
     """
     Return the structure for plays data extraction.
 

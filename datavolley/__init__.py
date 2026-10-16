@@ -12,7 +12,7 @@ from .core.set_calls import extract_setter_calls
 from .core.teams import extract_teams
 from .core.xml_to_dvw import xml_to_dvw
 from .io.plays import plays_data
-from .types import MatchData, ValidationMode, validate_and_normalize_plays
+from .types import MatchData, normalize_play
 from .utils.metadata import (
     assign_rally_numbers_to_plays,
     extract_comments,
@@ -29,42 +29,28 @@ __author__ = "Tyler Widdison"
 
 # Explicitly define what's available when someone imports the package
 __all__ = [
-    # Main loading function
-    "load_dvw",
-    "read_dv",
-    "example_file",
-    # Metadata functions
-    "extract_date",
-    "generate_match_id",
-    "extract_set_scores",
-    "get_match_result",
-    "extract_comments",
-    "get_rally_number",
     "assign_rally_numbers_to_plays",
-    # Team functions
-    "extract_teams",
-    # Player functions
+    "dv_attack_code2desc",
+    "dv_index2xy",
+    "example_file",
+    "extract_attack_combinations",
+    "extract_comments",
+    "extract_date",
     "extract_players",
-    # Play functions
     "extract_plays",
     "extract_score_from_code",
-    "parse_play_code",
-    "extract_skill_subtype",
-    # Attack combination functions
-    "extract_attack_combinations",
-    # Setter call functions
+    "extract_set_scores",
     "extract_setter_calls",
-    # Coordinate functions
-    "dv_index2xy",
-    # Summary function
+    "extract_skill_subtype",
+    "extract_teams",
+    "generate_match_id",
+    "get_match_result",
     "get_match_summary",
-    # Attack code helpers
-    "dv_attack_code2desc",
-    # Build dvw
+    "get_rally_number",
+    "load_dvw",
+    "parse_play_code",
+    "read_dv",
     "xml_to_dvw",
-    # Type controls
-    "ValidationMode",
-    "validate_and_normalize_plays",
 ]
 
 
@@ -78,13 +64,7 @@ def example_file() -> str:
     return str(Path(__file__).parent / "data" / "example_match.dvw")
 
 
-def load_dvw(
-    file_path: str,
-    *,
-    validation_mode: ValidationMode | str = ValidationMode.LENIENT,
-    normalize_types: bool = False,
-    return_issues: bool = False,
-) -> MatchData | tuple[MatchData, list[dict[str, Any]]]:
+def load_dvw(file_path: str) -> MatchData:
     """
     Load and parse a DVW file into a comprehensive match data dictionary.
 
@@ -106,7 +86,6 @@ def load_dvw(
                 "setter_calls": list,
                 "plays": list  # Now includes rally_number and point_won_by fields
             }
-            If return_issues=True, returns a tuple of (match_data, issues).
 
     Example:
         >>> import datavolley as dv
@@ -146,15 +125,7 @@ def load_dvw(
     if match_data.get("plays"):
         match_data = get_rally_number(match_data)
 
-    validated_plays, issues = validate_and_normalize_plays(
-        match_data.get("plays", []),
-        mode=validation_mode,
-        normalize=normalize_types,
-    )
-    match_data["plays"] = validated_plays
-
-    if return_issues:
-        return match_data, [issue.model_dump() for issue in issues]
+    match_data["plays"] = [normalize_play(play) for play in match_data.get("plays", [])]
 
     return match_data
 
@@ -195,13 +166,7 @@ def get_match_summary(match_data: MatchData) -> dict:
     }
 
 
-def read_dv(
-    file_path: str,
-    *,
-    validation_mode: ValidationMode | str = ValidationMode.LENIENT,
-    normalize_types: bool = False,
-    return_issues: bool = False,
-) -> list[dict[str, Any]] | tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def read_dv(file_path: str) -> list[dict[str, Any]]:
     """
     Load and parse a DVW file into a list of dictionaries suitable for DataFrame creation.
     Rally numbers and point winners are automatically included.
@@ -210,9 +175,8 @@ def read_dv(
         file_path (str): Path to the DVW file
 
     Returns:
-        list[dict]: List of dictionaries containing play data with coordinate information,
-            including rally_number and point_won_by fields.
-            If return_issues=True, returns a tuple of (plays, issues).
+            list[dict]: List of dictionaries containing play data with coordinate information,
+                including rally_number and point_won_by fields.
     """
     try:
         with open(file_path, "r", encoding="utf-8") as f:
@@ -313,11 +277,6 @@ def read_dv(
     visiting_team = teams.get("team_2", "visiting")
     result = assign_rally_numbers_to_plays(result, home_team, visiting_team)
 
-    validated_plays, issues = validate_and_normalize_plays(
-        result, mode=validation_mode, normalize=normalize_types
-    )
-
-    if return_issues:
-        return validated_plays, [issue.model_dump() for issue in issues]
+    validated_plays = [normalize_play(play) for play in result]
 
     return validated_plays

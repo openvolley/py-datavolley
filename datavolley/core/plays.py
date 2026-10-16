@@ -1,8 +1,7 @@
 import re
-from typing import Dict, List, Optional
 
 
-def extract_score_from_code(code: str) -> Optional[Dict]:
+def extract_score_from_code(code: str) -> dict | None:
     """
     Extract score information from play codes like *p23:18, ap24:18, etc.
     """
@@ -22,7 +21,7 @@ def extract_score_from_code(code: str) -> Optional[Dict]:
     return None
 
 
-def parse_play_line(line: str, line_number: int) -> Optional[Dict]:
+def parse_play_line(line: str, line_number: int) -> dict | None:
     """
     Parse a single play line split by semicolons.
 
@@ -87,7 +86,7 @@ def parse_play_line(line: str, line_number: int) -> Optional[Dict]:
         return None
 
 
-def extract_plays(raw_content: str) -> List[Dict]:
+def extract_plays(raw_content: str) -> list[dict]:
     """
     Extract plays data from DVW file content with score tracking.
 

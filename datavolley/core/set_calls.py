@@ -1,10 +1,9 @@
 # datavolley/core/setter_calls.py
 
 import re
-from typing import Dict, List, Optional
 
 
-def extract_setter_calls(raw_content: str) -> List[Dict]:
+def extract_setter_calls(raw_content: str) -> list[dict]:
     """
     Extract setter call data from DVW file content.
 
@@ -36,7 +35,7 @@ def extract_setter_calls(raw_content: str) -> List[Dict]:
     return setter_calls
 
 
-def parse_setter_call_line(line: str) -> Optional[Dict]:
+def parse_setter_call_line(line: str) -> dict | None:
     """
     Parse a single setter call line split by semicolons.
 

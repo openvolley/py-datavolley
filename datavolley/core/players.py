@@ -1,10 +1,9 @@
 import random
 import re
 import string
-from typing import Dict, List, Optional
 
 
-def extract_teams(raw_content: str) -> Dict:
+def extract_teams(raw_content: str) -> dict:
     """
     Extract team data from DVW file content.
 
@@ -42,7 +41,7 @@ def extract_teams(raw_content: str) -> Dict:
     return teams_data
 
 
-def extract_players(raw_content: str) -> Dict[str, List[Dict]]:
+def extract_players(raw_content: str) -> dict[str, list[dict]]:
     """
     Extract player data from DVW file content.
 
@@ -76,7 +75,7 @@ def extract_players(raw_content: str) -> Dict[str, List[Dict]]:
     return players
 
 
-def parse_player_lines(section_content: str, team: str) -> List[Dict]:
+def parse_player_lines(section_content: str, team: str) -> list[dict]:
     """
     Parse individual player lines from a team section.
 
@@ -98,7 +97,7 @@ def parse_player_lines(section_content: str, team: str) -> List[Dict]:
     return players
 
 
-def parse_single_player(line: str, team: str) -> Optional[Dict]:
+def parse_single_player(line: str, team: str) -> dict | None:
     """
     Parse a single player line split by semicolons.
 

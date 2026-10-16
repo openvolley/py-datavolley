@@ -32,7 +32,7 @@ def extract_date(raw_content: str) -> datetime | None:
         try:
             # Convert to standard datetime format
             datetime_str = f"{date_str} {time_str.replace('.', ':')}"
-            return datetime.strptime(datetime_str, "%m/%d/%Y %H:%M:%S")
+            return datetime.strptime(datetime_str, "%m/%d/%Y %H:%M:%S")  # noqa: DTZ007 - DVW match times carry no timezone
         except ValueError:
             return None
 
@@ -167,7 +167,7 @@ def get_match_result(set_scores: dict) -> dict:
 
     # Find the maximum set number
     set_numbers = []
-    for key in set_scores.keys():
+    for key in set_scores:
         if key.startswith("team_1_set_"):
             set_num = int(key.split("_")[-1])
             set_numbers.append(set_num)
@@ -463,9 +463,12 @@ def assign_rally_numbers_to_plays(
             current_rally = 1
 
         # Increment rally number on serves after the first one
-        if play.get("skill") == "Serve":
-            if current_set is not None and current_rally > 1:
-                current_rally += 1
+        if (
+            play.get("skill") == "Serve"
+            and current_set is not None
+            and current_rally > 1
+        ):
+            current_rally += 1
 
         play["rally_number"] = current_rally
 

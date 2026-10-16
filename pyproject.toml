@@ -15,12 +15,18 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
-dependencies = [
-    "pydantic>=2.14.1",
+dependencies = []
+
+[dependency-groups]
+dev = [
     "ruff>=0.17.1",
     "ty>=0.0.88",
 ]
+
+[tool.ruff.lint]
+extend-select = ["DTZ"]
 
 [tool.hatch.build.targets.wheel]
 include = [

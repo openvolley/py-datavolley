@@ -1,8 +1,7 @@
 import re
-from typing import Dict, List, Optional
 
 
-def extract_attack_combinations(raw_content: str) -> List[Dict]:
+def extract_attack_combinations(raw_content: str) -> list[dict]:
     """
     Extract attack combination data from DVW file content.
 
@@ -34,7 +33,7 @@ def extract_attack_combinations(raw_content: str) -> List[Dict]:
     return attack_combinations
 
 
-def parse_attack_combo_line(line: str) -> Optional[Dict]:
+def parse_attack_combo_line(line: str) -> dict | None:
     """
     Parse a single attack combination line split by semicolons.
 

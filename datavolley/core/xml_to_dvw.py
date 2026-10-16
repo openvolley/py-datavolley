@@ -4,7 +4,7 @@ import os
 import re
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, TypedDict
+from typing import Any, TypedDict
 
 # ============================================================================
 # CONSTANTS / MAPPINGS
@@ -139,7 +139,7 @@ class InstanceData(TypedDict):
     start: float
     end: float
     code: str
-    labels: Dict[str, str]
+    labels: dict[str, str]
 
 
 class PlayData(TypedDict):
@@ -148,8 +148,8 @@ class PlayData(TypedDict):
     video_time: float
     home_setter_pos: int
     visit_setter_pos: int
-    home_lineup: List[str]
-    visit_lineup: List[str]
+    home_lineup: list[str]
+    visit_lineup: list[str]
 
 
 def parse_xml_file(xml_file: str) -> ET.Element:
@@ -166,7 +166,7 @@ def parse_xml_file(xml_file: str) -> ET.Element:
     return tree.getroot()
 
 
-def extract_instances(root: ET.Element) -> List[InstanceData]:
+def extract_instances(root: ET.Element) -> list[InstanceData]:
     """
     Extract all instances with their labels as dictionaries.
 
@@ -184,7 +184,7 @@ def extract_instances(root: ET.Element) -> List[InstanceData]:
         return instances
 
     for instance in all_instances.findall("instance"):
-        labels: Dict[str, str] = {}
+        labels: dict[str, str] = {}
 
         # Extract all labels
         for label in instance.findall("label"):
@@ -211,7 +211,7 @@ def extract_instances(root: ET.Element) -> List[InstanceData]:
 # ============================================================================
 
 
-def get_team_prefixes(instances: List[InstanceData]) -> Tuple[str, str]:
+def get_team_prefixes(instances: list[InstanceData]) -> tuple[str, str]:
     """
     Detect team prefixes from instance codes (e.g., 'USA1', 'USA2' or 'UNL', 'TAMU').
 
@@ -252,8 +252,8 @@ def get_team_prefixes(instances: List[InstanceData]) -> Tuple[str, str]:
 
 
 def extract_match_info(
-    instances: List[InstanceData], xml_file: str, team_prefixes: Tuple[str, str]
-) -> Dict[str, str]:
+    instances: list[InstanceData], xml_file: str, team_prefixes: tuple[str, str]
+) -> dict[str, str]:
     """
     Extract match metadata from instances and filename.
 
@@ -267,8 +267,8 @@ def extract_match_info(
     """
     home_prefix, away_prefix = team_prefixes
     match_info = {
-        "date": datetime.now().strftime("%m/%d/%Y"),
-        "year": str(datetime.now().year),
+        "date": datetime.now().astimezone().strftime("%m/%d/%Y"),
+        "year": str(datetime.now().astimezone().year),
         "home_team": home_prefix,
         "home_prefix": team_prefixes[0],
         "away_team": away_prefix,
@@ -305,8 +305,8 @@ def extract_match_info(
 
 
 def extract_players(
-    instances: List[InstanceData], team_prefixes: Tuple[str, str]
-) -> Dict[str, List[Dict[str, str]]]:
+    instances: list[InstanceData], team_prefixes: tuple[str, str]
+) -> dict[str, list[dict[str, str]]]:
     """
     Extract unique players for each team from instances.
 
@@ -366,7 +366,7 @@ def extract_players(
     }
 
 
-def get_skill_from_code(code: str) -> Optional[str]:
+def get_skill_from_code(code: str) -> str | None:
     """
     Extract skill name from instance code.
 
@@ -398,7 +398,7 @@ def get_skill_from_code(code: str) -> Optional[str]:
     return None
 
 
-def parse_game_score(score_str: str) -> Tuple[int, int]:
+def parse_game_score(score_str: str) -> tuple[int, int]:
     """
     Parse game score string to tuple.
 
@@ -435,7 +435,7 @@ def parse_game_score(score_str: str) -> Tuple[int, int]:
 # ============================================================================
 
 
-def build_scout_code(play: Dict[str, Any]) -> str:
+def build_scout_code(play: dict[str, Any]) -> str:
     """
     Build the simplified DVW scout code from play data.
 
@@ -500,7 +500,7 @@ def build_scout_code(play: Dict[str, Any]) -> str:
     return code
 
 
-def build_full_line(code: str, play: Dict[str, Any]) -> str:
+def build_full_line(code: str, play: dict[str, Any]) -> str:
     """
     Build complete DVW scout line with all fields (simplified format).
 
@@ -554,7 +554,7 @@ def build_full_line(code: str, play: Dict[str, Any]) -> str:
     return ";".join(parts)
 
 
-def build_set_end_line(play: Dict[str, Any]) -> str:
+def build_set_end_line(play: dict[str, Any]) -> str:
     """
     Build set end marker line.
 
@@ -599,8 +599,8 @@ def build_set_end_line(play: Dict[str, Any]) -> str:
 
 
 def build_rotation_lines(
-    play: Dict[str, Any], players: Dict[str, List[Dict[str, str]]]
-) -> List[str]:
+    play: dict[str, Any], players: dict[str, list[dict[str, str]]]
+) -> list[str]:
     """
     Build rotation indicator lines.
 
@@ -700,10 +700,10 @@ def build_rotation_lines(
 
 
 def process_instances_to_plays(
-    instances: List[InstanceData],
-    players: Dict[str, List[Dict[str, str]]],
-    team_prefixes: Tuple[str, str],
-) -> List[Dict[str, Any]]:
+    instances: list[InstanceData],
+    players: dict[str, list[dict[str, str]]],
+    team_prefixes: tuple[str, str],
+) -> list[dict[str, Any]]:
     """
     Convert XML instances to DVW play dictionaries.
 
@@ -723,7 +723,6 @@ def process_instances_to_plays(
     current_visit_rot = 1
     home_score = 0  # Per-set score
     away_score = 0  # Per-set score
-    last_rally_start = None
     need_rotation_lines = True
     is_first_rotation_of_set = True  # Track first rotation for >LUp suffix
 
@@ -807,7 +806,6 @@ def process_instances_to_plays(
                 need_rotation_lines = False
                 is_first_rotation_of_set = False  # Only first rotation gets >LUp
 
-            last_rally_start = start_time
             continue
 
         # Skip non-skill instances (Offense/Defense First Ball, Transition, etc.)
@@ -1015,8 +1013,8 @@ def process_instances_to_plays(
 
 
 def calculate_set_results(
-    plays: List[Dict[str, Any]],
-) -> Tuple[Tuple[int, int], List[Tuple[int, int]]]:
+    plays: list[dict[str, Any]],
+) -> tuple[tuple[int, int], list[tuple[int, int]]]:
     """
     Calculate sets won and final scores for each set.
 
@@ -1070,7 +1068,7 @@ def calculate_set_results(
 
 def build_header_section() -> str:
     """Build [3DATAVOLLEYSCOUT] section."""
-    now = datetime.now()
+    now = datetime.now().astimezone()
     date_str = now.strftime("%m/%d/%Y %H.%M.%S")
 
     # Use `: ` (colon-space) as separator to match real DVW format
@@ -1090,7 +1088,7 @@ LASTCHANGE-VER:
 LASTCHANGE-NAM: """
 
 
-def build_match_section(match_info: Dict[str, str]) -> str:
+def build_match_section(match_info: dict[str, str]) -> str:
     """Build [3MATCH] section."""
     date_str = match_info.get("date", "01/01/2025")
     year = match_info.get("year", "2025")
@@ -1103,7 +1101,7 @@ def build_match_section(match_info: Dict[str, str]) -> str:
 ;;;;;;;;"""
 
 
-def build_teams_section(match_info: Dict[str, str], sets_won: Tuple[int, int]) -> str:
+def build_teams_section(match_info: dict[str, str], sets_won: tuple[int, int]) -> str:
     """Build [3TEAMS] section.
 
     Args:
@@ -1131,7 +1129,7 @@ def build_comments_section() -> str:
     return "[3COMMENTS]"
 
 
-def build_set_section(set_scores: List[Tuple[int, int]]) -> str:
+def build_set_section(set_scores: list[tuple[int, int]]) -> str:
     """Build [3SET] section with score checkpoints.
 
     Args:
@@ -1176,7 +1174,7 @@ def build_set_section(set_scores: List[Tuple[int, int]]) -> str:
     return "\n".join(lines)
 
 
-def build_players_section(players: List[Dict[str, str]], team_index: int) -> str:
+def build_players_section(players: list[dict[str, str]], team_index: int) -> str:
     """
     Build [3PLAYERS-H] or [3PLAYERS-V] section.
 
@@ -1261,7 +1259,7 @@ def build_reserve_section() -> str:
 
 
 def build_scout_section(
-    plays: List[Dict[str, Any]], players: Dict[str, List[Dict[str, str]]]
+    plays: list[dict[str, Any]], players: dict[str, list[dict[str, str]]]
 ) -> str:
     """
     Build [3SCOUT] section with all play codes.

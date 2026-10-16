@@ -1,10 +1,9 @@
 # datavolley/core/teams.py
 
 import re
-from typing import Dict, Optional
 
 
-def extract_teams(raw_content: str) -> Dict:
+def extract_teams(raw_content: str) -> dict:
     """
     Extract team data from DVW file content.
 
@@ -43,7 +42,7 @@ def extract_teams(raw_content: str) -> Dict:
     return teams_data
 
 
-def parse_team_line(line: str) -> Optional[Dict]:
+def parse_team_line(line: str) -> dict | None:
     """
     Parse a single team line split by semicolons.
 
