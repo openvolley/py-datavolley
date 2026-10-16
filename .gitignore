@@ -12,6 +12,7 @@ build/
 # Data
 *.vsm
 *.json
+
 # Virtual environments
 .venv/
 venv/
@@ -32,8 +33,3 @@ Thumbs.db
 
 # PyPI credentials
 .pypirc
-
-# Programes
-opencode.exe
-Alacritty-v0.15.1-portable.exe
-AGENTS.md
