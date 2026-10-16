@@ -19,6 +19,9 @@ classifiers = [
 ]
 dependencies = []
 
+[project.optional-dependencies]
+viz = ["lets-plot>=4.11"]
+
 [dependency-groups]
 dev = [
     "ruff>=0.17.1",

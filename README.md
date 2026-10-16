@@ -11,6 +11,12 @@ uv init
 uv add openvolley-pydatavolley
 ```
 
+For plotting support (e.g. plotting play coordinates with [Lets-Plot](https://lets-plot.org/)):
+
+```bash
+uv add "openvolley-pydatavolley[viz]"
+```
+
 ```python
 import datavolley as dv
 
