@@ -225,6 +225,15 @@ def extract_comments(raw_content: str) -> str:
 # Updated functions for metadata.py to use team names and add new variables
 
 
+def _is_serve_play(play: dict) -> bool:
+    """A play is a serve if its skill says so, or (raw plays without skill)
+    if position 3 of the scout code is 'S', matching parse_play_code."""
+    if play.get("skill") == "Serve":
+        return True
+    code = play.get("code") or ""
+    return len(code) > 3 and code[3] == "S"
+
+
 def get_rally_number(result_content: MatchData) -> MatchData:
     """
     Assign rally numbers (possession numbers) per set, incrementing on serves.
@@ -252,7 +261,8 @@ def get_rally_number(result_content: MatchData) -> MatchData:
 
     # First pass: Assign rally numbers
     current_set = None
-    current_rally = 0
+    current_rally = 1
+    serve_seen_in_set = False
 
     for play_dict in result:
         play_set = play_dict.get("set_number")
@@ -264,14 +274,15 @@ def get_rally_number(result_content: MatchData) -> MatchData:
         # Reset rally counter when moving to a new set
         if play_set != current_set:
             current_set = play_set
-            current_rally = 1  # Start at 1 for the first rally
+            current_rally = 1
+            serve_seen_in_set = False
 
-        # Increment rally number on serves after the first one
-        if play_dict.get("skill") == "Serve":
-            if current_set is not None and current_rally > 1:
+        # Increment rally number on every serve except the first of the set
+        if _is_serve_play(play_dict):
+            if serve_seen_in_set:
                 current_rally += 1
-            elif current_set is not None and current_rally == 0:
-                current_rally = 1
+            else:
+                serve_seen_in_set = True
 
         play_dict["rally_number"] = current_rally
 
@@ -308,7 +319,7 @@ def get_rally_number(result_content: MatchData) -> MatchData:
         serving_team = None
         receiving_team = None
         for play in plays_in_rally:
-            if play.get("skill") == "Serve":
+            if _is_serve_play(play):
                 serving_team = play.get("team")
                 # Determine receiving team
                 if serving_team == home_team:
@@ -389,7 +400,7 @@ def get_rally_number(result_content: MatchData) -> MatchData:
                 play["attack_phase"] = None
 
             # Calculate possession_number - start at 0 for serve
-            if play.get("skill") == "Serve":
+            if _is_serve_play(play):
                 possession_number = 0
                 last_team_in_possession = current_team
                 possession_started = True
@@ -448,7 +459,8 @@ def assign_rally_numbers_to_plays(
 
     # First pass: Assign rally numbers
     current_set = None
-    current_rally = 0
+    current_rally = 1
+    serve_seen_in_set = False
 
     for play in plays:
         play_set = play.get("set_number")
@@ -461,14 +473,14 @@ def assign_rally_numbers_to_plays(
         if play_set != current_set:
             current_set = play_set
             current_rally = 1
+            serve_seen_in_set = False
 
-        # Increment rally number on serves after the first one
-        if (
-            play.get("skill") == "Serve"
-            and current_set is not None
-            and current_rally > 1
-        ):
-            current_rally += 1
+        # Increment rally number on every serve except the first of the set
+        if _is_serve_play(play):
+            if serve_seen_in_set:
+                current_rally += 1
+            else:
+                serve_seen_in_set = True
 
         play["rally_number"] = current_rally
 
@@ -504,7 +516,7 @@ def assign_rally_numbers_to_plays(
         serving_team = None
         receiving_team = None
         for play in rally_plays:
-            if play.get("skill") == "Serve":
+            if _is_serve_play(play):
                 serving_team = play.get("team")
                 # Determine receiving team based on serving team
                 if serving_team == home_team:
@@ -588,7 +600,7 @@ def assign_rally_numbers_to_plays(
                 play["attack_phase"] = None
 
             # Calculate possession_number - start at 0 for serve
-            if play.get("skill") == "Serve":
+            if _is_serve_play(play):
                 possession_number = 0
                 last_team_in_possession = current_team
                 possession_started = True

@@ -107,6 +107,7 @@ def extract_plays(raw_content: str) -> list[dict]:
     lines = [line.strip() for line in scout_section.split("\n") if line.strip()]
 
     plays = []
+    current_set = None
     current_home_score = "0"
     current_visiting_score = "0"
 
@@ -115,6 +116,13 @@ def extract_plays(raw_content: str) -> list[dict]:
         if line:
             play_data = parse_play_line(line, line_num + 1)
             if play_data:
+                # Reset running score when the set changes
+                play_set = play_data.get("set_number")
+                if play_set is not None and play_set != current_set:
+                    current_set = play_set
+                    current_home_score = "0"
+                    current_visiting_score = "0"
+
                 # Check if this play has score information
                 score_info = extract_score_from_code(play_data["code"])
                 if score_info:
