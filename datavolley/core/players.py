@@ -1,6 +1,4 @@
-import random
 import re
-import string
 
 
 def extract_teams(raw_content: str) -> dict:
@@ -122,9 +120,7 @@ def parse_single_player(line: str, team: str) -> dict | None:
         # Extract player ID safely
         player_id = parts[8] if len(parts) > 8 and parts[8] else None
         if not player_id:
-            player_id = "".join(
-                random.choices(string.ascii_letters + string.digits, k=6)
-            )
+            player_id = f"player_{player_number}"
 
         # Extract names safely
         last_name = parts[9] if len(parts) > 9 and parts[9] else None
@@ -132,7 +128,7 @@ def parse_single_player(line: str, team: str) -> dict | None:
 
         # Create full name
         name_parts = [first_name, last_name]
-        full_name = " ".join(str(filter(None, name_parts))) or None
+        full_name = " ".join(filter(None, name_parts)) or None
 
         player = {
             "team": team,

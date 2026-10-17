@@ -1,29 +1,189 @@
 from __future__ import annotations
 
 import re
-from typing import TypedDict
+
+from datavolley.types.code import ParsedPlayCode
+
+_EVALUATIONS = {
+    "Serve": {
+        "=": "Error",
+        "/": "Positive, no attack",
+        "-": "Negative, opponent free attack",
+        "!": "OK, no first tempo possible",
+        "+": "Positive, opponent some attack",
+        "#": "Ace",
+    },
+    "Reception": {
+        "=": "Error",
+        "/": "Poor, no attack",
+        "-": "Negative, limited attack",
+        "!": "OK, no first tempo possible",
+        "+": "Positive, attack",
+        "#": "Perfect pass",
+    },
+    "Attack": {
+        "=": "Error",
+        "/": "Blocked",
+        "-": "Poor, easily dug",
+        "!": "Blocked for reattack",
+        "+": "Positive, good attack",
+        "#": "Winning attack",
+    },
+    "Block": {
+        "=": "Error",
+        "/": "Invasion",
+        "-": "Poor, opposition to replay",
+        "!": "Poor, opposition to replay",
+        "+": "Positive, block touch",
+        "#": "Winning block",
+    },
+    "Dig": {
+        "=": "Error",
+        "/": "Ball directly back over net",
+        "-": "No structured attack possible",
+        "!": "OK, no first tempo possible",
+        "+": "Good dig",
+        "#": "Perfect dig",
+    },
+    "Set": {
+        "=": "Error",
+        "/": "Poor",
+        "-": "Poor",
+        "!": "OK",
+        "+": "Positive",
+        "#": "Perfect",
+    },
+    "Freeball": {
+        "=": "Error",
+        "/": "Poor",
+        "-": "OK, only high set possible",
+        "!": "OK, no first tempo possible",
+        "+": "Good",
+        "#": "Perfect",
+    },
+}
+
+_BLOCK_PLAYERS = {
+    0: "No block",
+    1: "1 player block",
+    2: "2 player block",
+    3: "3 player block",
+    4: "Hole block",
+}
+
+_RECEPTION_PLAYERS = {
+    1: "Two players receiving, the player on left receives",
+    2: "Two players receiving, the player on right receives",
+    3: "Three players receiving, the player on left receives",
+    4: "Three players receiving, the player in center receives",
+    5: "Three players receiving, the player on right receives",
+    6: "Four players receiving, the player on left receives",
+    7: "Four players receiving, the player on center-left receives",
+    8: "Four players receiving, the player on center-right receives",
+    9: "Four players receiving, the player on right receives",
+}
+
+_SPECIAL_CODES = {
+    "Block": {
+        "S": "Ball out - side",
+        "O": "Ball out - long",
+        "F": "Ball on floor",
+        "X": "Between hands",
+        "N": "Hands - net",
+        "I": "Net contact",
+        "A": "Antenna",
+        "P": "No jump",
+        "T": "Position error",
+        "Z": "Referee call",
+    },
+    "Reception": {
+        "U": "Unplayable",
+        "X": "Body error",
+        "P": "Position error",
+        "Z": "Referee call",
+        "E": "Lack of effort",
+    },
+    "Freeball": {
+        "U": "Unplayable",
+        "X": "Body error",
+        "P": "Position error",
+        "Z": "Referee call",
+    },
+    "Dig": {
+        "U": "Unplayable",
+        "X": "Body error",
+        "P": "Position error",
+        "Z": "Referee call",
+        "F": "Ball on floor",
+        "O": "Ball out",
+        "E": "Lack of effort",
+    },
+    "Set": {"U": "Cannot be hit", "I": "Net touch", "Z": "Referee call"},
+}
 
 
-class ParsedPlayCode(TypedDict):
-    code: str
-    team: str | None
-    player_number: int | None
-    player_name: str | None
-    player_id: str | None
-    skill: str | None
-    skill_type: str | None
-    evaluation_code: str | None
-    set_code: str | None
-    start_zone: str | None
-    end_zone: str | None
-    end_subzone: str | None
-    num_players_numeric: int | None
-    skill_subtype: str | None
-    attack_code: str | None
-    custom_code: str | None
+def _uses_cones(raw_content: str) -> bool:
+    match = re.search(r"\[3MATCH\]\s+([^\r\n]+)", raw_content)
+    if not match:
+        return False
+    parts = match.group(1).split(";")
+    return any(parts[index : index + 1] == ["C"] for index in (10, 11))
 
 
-def parse_play_code(raw_content: str, code: str) -> ParsedPlayCode | None:
+def _decode_num_players(skill: str, value: int | None) -> str | None:
+    if value is None:
+        return None
+    if skill in {"Attack", "Block"}:
+        return _BLOCK_PLAYERS.get(value, f"Unexpected {value}")
+    if skill == "Reception":
+        return _RECEPTION_PLAYERS.get(value, f"Unexpected {value}")
+    return f"Unexpected {value}"
+
+
+def _decode_special_code(skill: str, evaluation: str, value: str | None) -> str | None:
+    if not value or value == "~":
+        return None
+
+    mapping = _SPECIAL_CODES.get(skill)
+    if skill == "Attack":
+        if evaluation == "=":
+            mapping = {
+                "S": "Attack out - side",
+                "O": "Attack out - long",
+                "N": "Attack in net",
+                "I": "Net contact",
+                "Z": "Referee call",
+                "A": "Antenna",
+            }
+        elif evaluation == "#":
+            mapping = {
+                "S": "Block out - side",
+                "O": "Block out - long",
+                "F": "Block on floor",
+                "X": "Direct on floor",
+                "N": "Let",
+            }
+        elif evaluation in {"+", "-", "!", "/"}:
+            mapping = {"C": "Block control", "N": "Let"}
+    elif skill == "Serve":
+        mapping = (
+            {
+                "O": "Ball out - long",
+                "L": "Ball out - left",
+                "R": "Ball out - right",
+                "N": "Ball in net",
+                "Z": "Referee call",
+            }
+            if evaluation == "="
+            else {"N": "Let"}
+        )
+
+    return mapping.get(value, f"Unexpected {value}") if mapping else None
+
+
+def parse_play_code(
+    raw_content: str, code: str, *, use_cones: bool | None = None
+) -> ParsedPlayCode | None:
     """
     Parse a volleyball play code into its components.
 
@@ -41,7 +201,7 @@ def parse_play_code(raw_content: str, code: str) -> ParsedPlayCode | None:
     Returns:
         Dictionary with parsed code components or None if invalid
     """
-    if not code or len(code) < 4:
+    if not code or len(code) < 2:
         return None
 
     parsed: ParsedPlayCode = {
@@ -53,13 +213,20 @@ def parse_play_code(raw_content: str, code: str) -> ParsedPlayCode | None:
         "skill": None,
         "skill_type": None,
         "evaluation_code": None,
+        "evaluation": None,
         "set_code": None,
+        "set_type": None,
+        "set_description": None,
         "start_zone": None,
         "end_zone": None,
         "end_subzone": None,
+        "end_cone": None,
         "num_players_numeric": None,
+        "num_players": None,
         "skill_subtype": None,
         "attack_code": None,
+        "attack_description": None,
+        "special_code": None,
         "custom_code": None,
     }
 
@@ -70,13 +237,17 @@ def parse_play_code(raw_content: str, code: str) -> ParsedPlayCode | None:
     elif code.startswith("a"):
         parsed["team"] = teams.get("team_2")
 
-    # Extract Player Number (positions 1-2)
-    try:
-        player_number = code[1:3]
-        if player_number.isdigit():
-            parsed["player_number"] = int(player_number)
-    except (IndexError, ValueError):
-        pass
+    if code[1:2] == "p":
+        parsed["skill"] = "Point"
+        return parsed
+
+    code_match = re.match(r"^[*a](\d+|\$\$)([SREABDF].*)$", code)
+    if not code_match:
+        return None
+
+    player_token, payload = code_match.groups()
+    if player_token.isdigit():
+        parsed["player_number"] = int(player_token)
 
     # Extract Player details using inline player extraction (avoid circular imports)
     players = _extract_players_lightweight(raw_content)
@@ -107,59 +278,55 @@ def parse_play_code(raw_content: str, code: str) -> ParsedPlayCode | None:
             parsed["player_name"] = player["full_name"]
             parsed["player_id"] = player["player_id"]
 
-    # Extract Skill (position 3, or position 1 for point codes)
-    if len(code) > 3:
-        skill_mapping = {
-            "S": "Serve",
-            "R": "Reception",
-            "E": "Set",
-            "A": "Attack",
-            "D": "Dig",
-            "B": "Block",
-            "F": "Freeball",
-            "p": "Point",
-        }
-        # Point codes have format *p01:00 where 'p' is at position 1
-        if len(code) > 1 and code[1] == "p":
-            parsed["skill"] = "Point"
-        else:
-            skill_code = code[3]
-            parsed["skill"] = skill_mapping.get(skill_code, "")
+    skill_mapping = {
+        "S": "Serve",
+        "R": "Reception",
+        "E": "Set",
+        "A": "Attack",
+        "D": "Dig",
+        "B": "Block",
+        "F": "Freeball",
+    }
+    skill_code = payload[0]
+    skill = skill_mapping[skill_code]
+    parsed["skill"] = skill
+    evaluation_code = payload[2:3]
+    if evaluation_code and evaluation_code != "~":
+        parsed["evaluation_code"] = evaluation_code
+        parsed["evaluation"] = _EVALUATIONS[skill].get(
+            evaluation_code, f"Unknown {skill.lower()} evaluation"
+        )
 
-    # Extract Evaluation (position 4)
-    if len(code) > 4:
-        parsed["evaluation_code"] = code[5]
+    combination = payload[3:5]
+    if combination and combination != "~~":
+        if skill == "Attack":
+            parsed["attack_code"] = combination
+        elif skill == "Set":
+            parsed["set_code"] = combination
 
-    # Extract Attack combination
-    if len(code) > 6 and code[3] == "A" and code[6:8] != "~~":
-        parsed["attack_code"] = code[6:8]
+    set_type = payload[5:6]
+    if skill == "Set" and set_type and set_type != "~":
+        parsed["set_type"] = set_type
 
-    # Extract Set codes
-    if len(code) > 6 and code[3] == "E" and code[6:8] != "~~":
-        parsed["set_code"] = code[6:8]
+    parsed["start_zone"] = payload[6:7] if payload[6:7] not in {"", "~"} else None
+    direction = payload[7:8]
+    if use_cones is None:
+        use_cones = _uses_cones(raw_content)
+    if skill == "Attack" and use_cones:
+        parsed["end_cone"] = int(direction) if direction.isdigit() else None
+    else:
+        parsed["end_zone"] = direction if direction not in {"", "~"} else None
+        parsed["end_subzone"] = payload[8:9] if payload[8:9] not in {"", "~"} else None
 
-    # Extract Blockers
-    if len(code) > 13 and parsed["skill"] == "Attack":
-        try:
-            parsed["num_players_numeric"] = int(code[13])
-        except (ValueError, IndexError):
-            pass
-
-    # Extract Zones (positions 9-11)
-    if len(code) > 9:
-        parsed["start_zone"] = code[9] if code[9] != "~" else None
-    if len(code) > 10:
-        parsed["end_zone"] = code[10] if code[10] != "~" else None
-    if len(code) > 11:
-        parsed["end_subzone"] = code[11] if code[11] != "~" else None
-
-    # Extract custom code (after last ~ and before end of string)
-    if len(code) > 14:
-        last_tilde_idx = code.rfind("~")
-        if last_tilde_idx != -1 and last_tilde_idx < len(code) - 1:
-            potential_custom = code[last_tilde_idx + 1 :]
-            if potential_custom and potential_custom != "":
-                parsed["custom_code"] = potential_custom
+    num_players = payload[10:11]
+    if num_players.isdigit():
+        parsed["num_players_numeric"] = int(num_players)
+    parsed["num_players"] = _decode_num_players(skill, parsed["num_players_numeric"])
+    parsed["special_code"] = _decode_special_code(
+        skill, evaluation_code, payload[11:12]
+    )
+    custom_code = payload[12:]
+    parsed["custom_code"] = custom_code or None
 
     # Extract skill_type (position 4) - full description like "High ball attack"
     if parsed["skill"] and len(code) > 4:

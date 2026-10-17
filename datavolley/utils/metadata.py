@@ -226,204 +226,200 @@ def extract_comments(raw_content: str) -> str:
 
 
 def _is_serve_play(play: dict) -> bool:
-    """A play is a serve if its skill says so, or (raw plays without skill)
-    if position 3 of the scout code is 'S', matching parse_play_code."""
+    """A play is a serve if its skill says so, or its scout code marks it."""
     if play.get("skill") == "Serve":
         return True
+
     code = play.get("code") or ""
-    return len(code) > 3 and code[3] == "S"
+    return code[3:4] == "S"
 
 
-def get_rally_number(result_content: MatchData) -> MatchData:
-    """
-    Assign rally numbers (possession numbers) per set, incrementing on serves.
-    Also determines point winners, phases, and possession tracking for each rally.
+def _is_point_play(play: dict) -> bool:
+    """A play assigns a point if its skill or scout code marks it."""
+    if play.get("skill") == "Point":
+        return True
 
-    Args:
-        result_content: Dictionary containing the processed match data with 'plays' and 'teams' keys
+    code = play.get("code") or ""
+    return code[1:2] == "p"
 
-    Returns:
-        Updated dictionary with rally_number, point_won_by, point_phase, attack_phase,
-        serving_team, receiving_team, and possession_number fields added to each play
-    """
-    # Get the plays list from the result content
-    if "plays" not in result_content:
-        raise ValueError("result_content must contain a 'plays' key with list of plays")
 
-    result = result_content["plays"]
+def _is_timeout_play(play: dict) -> bool:
+    """A play is a timeout if its skill or scout code marks it."""
+    if play.get("skill") in {"Timeout", "Technical timeout"}:
+        return True
 
-    # Extract team names from the result_content
-    teams = result_content.get("teams", {})
-    home_team = teams.get("team_1", "home")  # fallback to "home" if not found
-    visiting_team = teams.get(
-        "team_2", "visiting"
-    )  # fallback to "visiting" if not found
+    code = play.get("code") or ""
+    return code[1:2] == "T"
 
-    # First pass: Assign rally numbers
+
+def _assign_point_ids(plays: list[dict]) -> None:
+    """Assign zero-based, match-wide point identifiers in place."""
+    point_id = 0
+
+    for index, play in enumerate(plays):
+        if index > 0 and (
+            _is_point_play(plays[index - 1])
+            or _is_timeout_play(play)
+            or _is_timeout_play(plays[index - 1])
+        ):
+            point_id += 1
+
+        play["point_id"] = point_id
+
+
+def _is_attack_play(play: dict) -> bool:
+    """A play is an attack if its skill says so, or its scout code marks it."""
+    if play.get("skill") == "Attack":
+        return True
+
+    code = play.get("code") or ""
+    return code[3:4] == "A"
+
+
+def _team_touch_team(play: dict) -> str | None:
+    """Return a stable team marker for team-touch boundary comparisons."""
+    code = play.get("code") or ""
+    if code.startswith("**"):
+        return None
+    if code[:1] in {"*", "a"}:
+        return code[:1]
+    return play.get("team")
+
+
+def _assign_team_touch_ids(plays: list[dict]) -> None:
+    """Assign zero-based, match-wide team-touch identifiers in place."""
+    if not plays:
+        return
+
+    team_touch_id = 0
+    previous = plays[0]
+    previous["team_touch_id"] = team_touch_id
+    previous_was_attack = _is_attack_play(previous)
+
+    for play in plays[1:]:
+        if (
+            _team_touch_team(play) != _team_touch_team(previous)
+            or play.get("point_id") != previous.get("point_id")
+            or (_is_attack_play(play) and previous_was_attack)
+        ):
+            team_touch_id += 1
+
+        play["team_touch_id"] = team_touch_id
+        previous = play
+        previous_was_attack = _is_attack_play(play)
+
+
+def _assign_point_metadata(
+    plays: list[dict],
+    home_team: str,
+    visiting_team: str,
+    players: dict[str, list[dict]] | None = None,
+) -> None:
+    point_groups: dict[int | None, list[dict]] = {}
+    for play in plays:
+        point_groups.setdefault(play.get("point_id"), []).append(play)
+
     current_set = None
-    current_rally = 1
-    serve_seen_in_set = False
-
-    for play_dict in result:
-        play_set = play_dict.get("set_number")
-
-        # Convert set_number to int if it's a string
-        if isinstance(play_set, str) and play_set.isdigit():
-            play_set = int(play_set)
-
-        # Reset rally counter when moving to a new set
-        if play_set != current_set:
-            current_set = play_set
-            current_rally = 1
-            serve_seen_in_set = False
-
-        # Increment rally number on every serve except the first of the set
-        if _is_serve_play(play_dict):
-            if serve_seen_in_set:
-                current_rally += 1
-            else:
-                serve_seen_in_set = True
-
-        play_dict["rally_number"] = current_rally
-
-    # Group plays by set and rally for processing
-    rallies = {}
-    for play in result:
-        set_num = play.get("set_number")
-        rally_num = play.get("rally_number")
-
-        # Convert to int if string
-        if isinstance(set_num, str) and set_num.isdigit():
-            set_num = int(set_num)
-
-        key = (set_num, rally_num)
-        if key not in rallies:
-            rallies[key] = []
-        rallies[key].append(play)
-
-    # Process each rally to determine all the new fields
     current_home_score = 0
     current_visiting_score = 0
-    current_set = None
-
-    for (set_num, rally_num), plays_in_rally in sorted(rallies.items()):
-        if set_num != current_set:
-            current_set = set_num
+    for point_plays in point_groups.values():
+        set_number = point_plays[0].get("set_number")
+        if set_number != current_set:
+            current_set = set_number
             current_home_score = 0
             current_visiting_score = 0
 
-        start_home = current_home_score
-        start_visiting = current_visiting_score
+        home_scores = [
+            int(play["home_team_score"])
+            for play in point_plays
+            if play.get("home_team_score") is not None
+        ]
+        visiting_scores = [
+            int(play["visiting_team_score"])
+            for play in point_plays
+            if play.get("visiting_team_score") is not None
+        ]
+        end_home_score = max(home_scores, default=current_home_score)
+        end_visiting_score = max(visiting_scores, default=current_visiting_score)
 
-        # Find the serving team for this rally
-        serving_team = None
-        receiving_team = None
-        for play in plays_in_rally:
-            if _is_serve_play(play):
-                serving_team = play.get("team")
-                # Determine receiving team
-                if serving_team == home_team:
-                    receiving_team = visiting_team
-                elif serving_team == visiting_team:
-                    receiving_team = home_team
-                else:
-                    # Try to match by home_team or visiting_team fields
-                    if play.get("home_team") == serving_team:
-                        receiving_team = play.get("visiting_team")
-                    elif play.get("visiting_team") == serving_team:
-                        receiving_team = play.get("home_team")
-                break
+        serving_team = next(
+            (play.get("team") for play in point_plays if _is_serve_play(play)), None
+        )
+        receiving_team = (
+            visiting_team
+            if serving_team == home_team
+            else home_team
+            if serving_team == visiting_team
+            else None
+        )
+        point_won_by = next(
+            (play.get("team") for play in point_plays if play.get("point")), None
+        )
 
-        # Determine point winner
-        point_won_by = None
-        if plays_in_rally:
-            last_play = plays_in_rally[-1]
-            home_score_str = last_play.get("home_team_score", "0")
-            visiting_score_str = last_play.get("visiting_team_score", "0")
-
-            try:
-                end_home = int(home_score_str) if home_score_str else 0
-                end_visiting = int(visiting_score_str) if visiting_score_str else 0
-            except (ValueError, TypeError):
-                end_home = start_home
-                end_visiting = start_visiting
-
-            if end_home > start_home:
-                point_won_by = home_team
-            elif end_visiting > start_visiting:
-                point_won_by = visiting_team
-
-            current_home_score = end_home
-            current_visiting_score = end_visiting
-
-        # Track possession changes for possession_number
-        possession_number = 0
-        last_team_in_possession = None
-        possession_started = False
-
-        # Apply all fields to plays in this rally
-        for play in plays_in_rally:
-            # Set serving and receiving teams
+        for play in point_plays:
+            play["home_score_start_of_point"] = current_home_score
+            play["visiting_score_start_of_point"] = current_visiting_score
+            play["home_team_score"] = end_home_score
+            play["visiting_team_score"] = end_visiting_score
             play["serving_team"] = serving_team
             play["receiving_team"] = receiving_team
             play["point_won_by"] = point_won_by
 
-            # Determine point_phase
-            current_team = play.get("team")
-            if current_team == serving_team:
-                play["point_phase"] = "Serve"
-            elif current_team == receiving_team:
-                play["point_phase"] = "Reception"
-            else:
-                play["point_phase"] = None
+        current_home_score = end_home_score
+        current_visiting_score = end_visiting_score
 
-            # Determine attack_phase (only for attacks)
-            if play.get("skill") == "Attack":
-                # Check if this is the first attack after serve/reception
-                # Look at previous plays to determine context
-                is_first_attack = True
-                for prev_play in plays_in_rally:
-                    if prev_play == play:
-                        break
-                    if (
-                        prev_play.get("skill") == "Attack"
-                        and prev_play.get("team") == current_team
-                    ):
-                        is_first_attack = False
-                        break
+    player_maps: dict[str, dict[str, object]] = {"home": {}, "visiting": {}}
+    if players:
+        for side in player_maps:
+            player_maps[side] = {
+                str(player.get("player_number")): player.get("player_id")
+                for player in players.get(side, [])
+                if player.get("player_number") is not None
+            }
 
-                if is_first_attack and play["point_phase"] == "Reception":
-                    play["attack_phase"] = "Reception"
-                else:
-                    play["attack_phase"] = "Transition"
-            else:
-                play["attack_phase"] = None
+    for play in plays:
+        for side in ("home", "visiting"):
+            for position in range(1, 7):
+                number = play.get(f"{side}_p{position}")
+                play[f"{side}_player_id{position}"] = (
+                    player_maps[side].get(str(number)) if number is not None else None
+                )
 
-            # Calculate possession_number - start at 0 for serve
-            if _is_serve_play(play):
-                possession_number = 0
-                last_team_in_possession = current_team
-                possession_started = True
-            elif (
-                possession_started
-                and current_team != last_team_in_possession
-                and current_team is not None
+    reception_touch_ids = {
+        play.get("team_touch_id") for play in plays if play.get("skill") == "Reception"
+    }
+    ball_skills = {"Serve", "Reception", "Set", "Attack", "Block", "Dig", "Freeball"}
+    for index, play in enumerate(plays):
+        skill = play.get("skill")
+        phase = "Transition" if skill in ball_skills else None
+        if skill == "Serve":
+            phase = "Serve"
+        if play.get("team_touch_id") in reception_touch_ids and skill in ball_skills:
+            phase = "Reception"
+        if (
+            skill == "Block"
+            and index > 0
+            and plays[index - 1].get("skill") == "Attack"
+            and plays[index - 1].get("phase") == "Reception"
+        ):
+            phase = "Reception"
+        play["phase"] = phase
+
+        if skill == "Attack" and index + 1 < len(plays):
+            next_play = plays[index + 1]
+            if (
+                next_play.get("skill") in {"Dig", "Block"}
+                and next_play.get("evaluation") == "Error"
             ):
-                possession_number += 1
-                last_team_in_possession = current_team
-            elif not possession_started and current_team is not None:
-                # For plays before the serve (like substitutions), keep at 0
-                possession_number = 0
-                last_team_in_possession = current_team
-
-            play["possession_number"] = possession_number
-
-    return result_content
+                play["winning_attack"] = True
 
 
 # Alternative simpler version if you just need to process a list of plays directly
 def assign_rally_numbers_to_plays(
-    plays: list, home_team: str | None = None, visiting_team: str | None = None
+    plays: list,
+    home_team: str | None = None,
+    visiting_team: str | None = None,
+    players: dict[str, list[dict]] | None = None,
 ) -> list:
     """
     Simplified version that works directly with a list of plays.
@@ -440,6 +436,9 @@ def assign_rally_numbers_to_plays(
     """
     if not plays:
         return plays
+
+    _assign_point_ids(plays)
+    _assign_team_touch_ids(plays)
 
     # Try to extract team names from the plays if not provided
     if home_team is None or visiting_team is None:
@@ -563,41 +562,13 @@ def assign_rally_numbers_to_plays(
         possession_started = False
 
         # Apply fields to all plays in rally
-        for i, play in enumerate(rally_plays):
+        for play in rally_plays:
             # Basic rally fields
             play["serving_team"] = serving_team
             play["receiving_team"] = receiving_team
             play["point_won_by"] = point_won_by
 
-            # Determine point_phase
             current_team = play.get("team")
-            if current_team == serving_team:
-                play["point_phase"] = "Serve"
-            elif current_team == receiving_team:
-                play["point_phase"] = "Reception"
-            else:
-                # If team is not serving or receiving team, might be None or different format
-                play["point_phase"] = None
-
-            # Determine attack_phase (only for attacks)
-            if play.get("skill") == "Attack":
-                # Look for previous attacks by same team in this rally
-                is_first_attack = True
-                for j in range(i):
-                    if (
-                        rally_plays[j].get("skill") == "Attack"
-                        and rally_plays[j].get("team") == current_team
-                    ):
-                        is_first_attack = False
-                        break
-
-                # If first attack and team is receiving team, it's Reception attack
-                if is_first_attack and current_team == receiving_team:
-                    play["attack_phase"] = "Reception"
-                else:
-                    play["attack_phase"] = "Transition"
-            else:
-                play["attack_phase"] = None
 
             # Calculate possession_number - start at 0 for serve
             if _is_serve_play(play):
@@ -618,4 +589,20 @@ def assign_rally_numbers_to_plays(
 
             play["possession_number"] = possession_number
 
+    _assign_point_metadata(plays, home_team, visiting_team, players)
     return plays
+
+
+def get_rally_number(result_content: MatchData) -> MatchData:
+    """Assign rally and point metadata to plays in a match-data dictionary."""
+    if "plays" not in result_content:
+        raise ValueError("result_content must contain a 'plays' key with list of plays")
+
+    teams = result_content.get("teams", {})
+    result_content["plays"] = assign_rally_numbers_to_plays(
+        result_content["plays"],
+        teams.get("team_1"),
+        teams.get("team_2"),
+        result_content.get("players"),
+    )
+    return result_content

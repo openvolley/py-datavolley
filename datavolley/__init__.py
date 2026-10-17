@@ -4,7 +4,7 @@ from typing import Any
 
 from .core.attack_codes import dv_attack_code2desc
 from .core.attack_combos import extract_attack_combinations
-from .core.code import extract_skill_subtype, parse_play_code
+from .core.code import _uses_cones, extract_skill_subtype, parse_play_code
 from .core.coordinates import dv_index2xy
 from .core.players import extract_players
 from .core.plays import extract_plays, extract_score_from_code
@@ -32,6 +32,7 @@ __all__ = [
     "dv_attack_code2desc",
     "dv_index2xy",
     "example_file",
+    "example_file_list",
     "extract_attack_combinations",
     "extract_comments",
     "extract_date",
@@ -60,6 +61,91 @@ def example_file() -> str:
         str: Path to example DVW file
     """
     return str(Path(__file__).parent / "data" / "example_match.dvw")
+
+
+def example_file_list() -> list[str]:
+    """Return paths to all DVW files included with the package."""
+    data_dir = Path(__file__).parent / "data"
+    return [
+        str(path)
+        for path in sorted(data_dir.glob("*.dvw"), key=lambda p: p.name.casefold())
+    ]
+
+
+def _enrich_plays(raw_content: str, match_data: MatchData) -> list[dict[str, Any]]:
+    teams = match_data["teams"]
+    home_team = teams.get("team_1")
+    visiting_team = teams.get("team_2")
+    attack_descriptions = {
+        item.get("code"): item.get("description")
+        for item in match_data["attack_combinations"]
+        if item.get("code")
+    }
+    set_descriptions = {
+        item.get("code"): item.get("description")
+        for item in match_data["setter_calls"]
+        if item.get("code")
+    }
+    use_cones = _uses_cones(raw_content)
+    template = plays_data()[0]
+    result = []
+
+    for play in match_data["plays"]:
+        play_dict = template.copy()
+        for key, value in play.items():
+            if key in play_dict:
+                play_dict[key] = value
+
+        play_dict["match_id"] = match_data["match_id"]
+        play_dict["home_team"] = home_team
+        play_dict["visiting_team"] = visiting_team
+        play_dict["home_team_id"] = teams.get("team_1_id")
+        play_dict["visiting_team_id"] = teams.get("team_2_id")
+        play_dict["home_team_score"] = play.get("home_score")
+        play_dict["visiting_team_score"] = play.get("visiting_score")
+
+        code = play.get("code") or ""
+        if code.startswith("*") and not code.startswith("**"):
+            play_dict["team"] = home_team
+            play_dict["team_id"] = teams.get("team_1_id")
+        elif code.startswith("a"):
+            play_dict["team"] = visiting_team
+            play_dict["team_id"] = teams.get("team_2_id")
+
+        parsed_code = parse_play_code(raw_content, code, use_cones=use_cones)
+        if parsed_code:
+            for key, value in parsed_code.items():
+                if key in play_dict and (key != "custom_code" or value):
+                    play_dict[key] = value
+            play_dict["winning_attack"] = (
+                parsed_code.get("evaluation") == "Winning attack"
+            )
+
+            attack_code = parsed_code.get("attack_code")
+            if attack_code:
+                play_dict["attack_description"] = attack_descriptions.get(
+                    attack_code, "unknown attack code"
+                )
+            set_code = parsed_code.get("set_code")
+            if set_code:
+                play_dict["set_description"] = set_descriptions.get(
+                    set_code, "unknown set code"
+                )
+
+        for coordinate in ("start", "mid", "end"):
+            value = play.get(f"{coordinate}_coordinate")
+            if value is not None:
+                xy = dv_index2xy(value)
+                if xy:
+                    play_dict[f"{coordinate}_coordinate_x"] = xy[0]
+                    play_dict[f"{coordinate}_coordinate_y"] = xy[1]
+
+        result.append(play_dict)
+
+    result = assign_rally_numbers_to_plays(
+        result, home_team, visiting_team, match_data["players"]
+    )
+    return [normalize_play(play) for play in result]
 
 
 def load_dvw(file_path: str) -> MatchData:
@@ -119,11 +205,7 @@ def load_dvw(file_path: str) -> MatchData:
     }
 
     match_data["match_result"] = get_match_result(match_data["set_scores"])
-
-    if match_data.get("plays"):
-        match_data = get_rally_number(match_data)
-
-    match_data["plays"] = [normalize_play(play) for play in match_data.get("plays", [])]
+    match_data["plays"] = _enrich_plays(content, match_data)
 
     return match_data
 
@@ -176,105 +258,4 @@ def read_dv(file_path: str) -> list[dict[str, Any]]:
             list[dict]: List of dictionaries containing play data with coordinate information,
                 including rally_number and point_won_by fields.
     """
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
-    except FileNotFoundError:
-        raise FileNotFoundError(f"DVW file not found: {file_path}")
-    except UnicodeDecodeError:
-        with open(file_path, "r", encoding="latin-1") as f:
-            content = f.read()
-
-    # Load without rally numbers first since we'll process plays then add them
-    # First extract raw data
-    match_data: MatchData = {
-        "filename": Path(file_path).stem,
-        "match_date": extract_date(content),
-        "match_id": generate_match_id(content),
-        "comments": extract_comments(content),
-        "teams": extract_teams(content),
-        "set_scores": extract_set_scores(content),
-        "players": extract_players(content),
-        "attack_combinations": extract_attack_combinations(content),
-        "setter_calls": extract_setter_calls(content),
-        "plays": extract_plays(content),
-    }
-    match_data["match_result"] = get_match_result(match_data["set_scores"])
-
-    plays = match_data["plays"]
-    teams = match_data["teams"]
-    match_id = match_data["match_id"]
-
-    result = []
-    template = plays_data()[0]
-
-    for play in plays:
-        play_dict = template.copy()
-
-        for key, value in play.items():
-            if key in play_dict:
-                play_dict[key] = value
-
-        play_dict["match_id"] = match_id
-        play_dict["home_team"] = teams.get("team_1")
-        play_dict["visiting_team"] = teams.get("team_2")
-        play_dict["home_team_id"] = teams.get("team_1_id")
-        play_dict["visiting_team_id"] = teams.get("team_2_id")
-
-        play_dict["home_team_score"] = play.get("home_score")
-        play_dict["visiting_team_score"] = play.get("visiting_score")
-
-        code = play.get("code")
-        if code:
-            parsed_code = parse_play_code(content, code)
-            if parsed_code:
-                play_dict["team"] = parsed_code.get("team")
-                play_dict["player_number"] = parsed_code.get("player_number")
-                play_dict["player_name"] = parsed_code.get("player_name")
-                play_dict["player_id"] = parsed_code.get("player_id")
-                play_dict["skill"] = parsed_code.get("skill")
-                play_dict["skill_type"] = parsed_code.get("skill_type")
-                play_dict["skill_subtype"] = parsed_code.get("skill_subtype")
-                play_dict["evaluation_code"] = parsed_code.get("evaluation_code")
-                play_dict["attack_code"] = parsed_code.get("attack_code")
-                play_dict["set_code"] = parsed_code.get("set_code")
-                play_dict["set_type"] = parsed_code.get("set_type")
-                play_dict["start_zone"] = parsed_code.get("start_zone")
-                play_dict["end_zone"] = parsed_code.get("end_zone")
-                play_dict["end_subzone"] = parsed_code.get("end_subzone")
-                play_dict["num_players_numeric"] = parsed_code.get(
-                    "num_players_numeric"
-                )
-                if parsed_code.get("custom_code"):
-                    play_dict["custom_code"] = parsed_code.get("custom_code")
-
-        start_coord = play.get("start_coordinate")
-        if start_coord is not None:
-            coords = dv_index2xy(start_coord)
-            if coords:
-                play_dict["start_coordinate_x"], play_dict["start_coordinate_y"] = (
-                    coords
-                )
-
-        mid_coord = play.get("mid_coordinate")
-        if mid_coord is not None:
-            coords = dv_index2xy(mid_coord)
-            if coords:
-                play_dict["mid_coordinate_x"], play_dict["mid_coordinate_y"] = coords
-
-        end_coord = play.get("end_coordinate")
-        if end_coord is not None:
-            coords = dv_index2xy(end_coord)
-            if coords:
-                play_dict["end_coordinate_x"], play_dict["end_coordinate_y"] = coords
-
-        result.append(play_dict)
-
-    # Always add rally numbers and point winners with actual team names
-    home_team = teams.get("team_1", "home")
-    visiting_team = teams.get("team_2", "visiting")
-    result = assign_rally_numbers_to_plays(result, home_team, visiting_team)
-
-    validated_plays = [normalize_play(play) for play in result]
-
-    return validated_plays
+    return load_dvw(file_path)["plays"]

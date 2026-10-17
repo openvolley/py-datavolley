@@ -1,7 +1,22 @@
 import re
+from datetime import datetime
 
 
-def extract_score_from_code(code: str) -> dict | None:
+def _parse_event_time(
+    match_date: str | None, event_time: str | None
+) -> datetime | None:
+    if not match_date or not event_time:
+        return None
+
+    try:
+        return datetime.strptime(  # noqa: DTZ007 - DVW event clocks have no timezone
+            f"{match_date} {event_time}", "%m/%d/%Y %H.%M.%S"
+        )
+    except ValueError:
+        return None
+
+
+def extract_score_from_code(code: str | None) -> dict | None:
     """
     Extract score information from play codes like *p23:18, ap24:18, etc.
     """
@@ -51,6 +66,25 @@ def parse_play_line(line: str, line_number: int) -> dict | None:
         play_data = {
             "line_number": line_number,
             "code": code,
+            "time": parts[7] if len(parts) > 7 and parts[7] else None,
+            "point_phase": {"p": "Breakpoint", "s": "Sideout"}.get(
+                parts[1], parts[1] or None
+            )
+            if len(parts) > 1
+            else None,
+            "attack_phase": {
+                "r": "Reception",
+                "p": "Transition breakpoint",
+                "s": "Transition sideout",
+            }.get(parts[2], parts[2] or None)
+            if len(parts) > 2
+            else None,
+            "point": extract_score_from_code(code) is not None,
+            "end_of_set": bool(re.match(r"^\*\*\d+set", code or "", re.IGNORECASE)),
+            "timeout": (code or "")[:2] in {"*T", "aT"},
+            "substitution": bool(re.match(r"^[*a][Pc]", code or ""))
+            and ">lup" not in (code or "").lower(),
+            "winning_attack": (code or "")[3:4] == "A" and (code or "")[5:6] == "#",
             "custom_code": custom_code,
             "start_coordinate": parts[4] if len(parts) > 4 else None,
             "mid_coordinate": parts[5] if len(parts) > 5 else None,
@@ -103,8 +137,14 @@ def extract_plays(raw_content: str) -> list[dict]:
     if not match:
         return []
 
-    scout_section = match.group(1).strip()
-    lines = [line.strip() for line in scout_section.split("\n") if line.strip()]
+    scout_header_line = raw_content[: match.start()].count("\n") + 1
+    match_date_match = re.search(r"\[3MATCH\]\s+(\d{2}/\d{2}/\d{4})", raw_content)
+    match_date = match_date_match.group(1) if match_date_match else None
+    lines = []
+    for line_offset, line in enumerate(match.group(1).split("\n")):
+        stripped_line = line.strip()
+        if stripped_line and stripped_line.strip("\x00"):
+            lines.append((scout_header_line + line_offset, stripped_line))
 
     plays = []
     current_set = None
@@ -112,10 +152,12 @@ def extract_plays(raw_content: str) -> list[dict]:
     current_visiting_score = "0"
 
     # Parse each play line
-    for line_num, line in enumerate(lines):
+    for line_num, (file_line_number, line) in enumerate(lines):
         if line:
             play_data = parse_play_line(line, line_num + 1)
             if play_data:
+                play_data["file_line_number"] = file_line_number
+                play_data["time"] = _parse_event_time(match_date, play_data.get("time"))
                 # Reset running score when the set changes
                 play_set = play_data.get("set_number")
                 if play_set is not None and play_set != current_set:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable
+from datetime import datetime
 from typing import Any
 
 
@@ -50,6 +51,10 @@ def _to_str(value: Any) -> str | None:
     return str(value)
 
 
+def _to_datetime(value: Any) -> datetime | None:
+    return value if isinstance(value, datetime) else None
+
+
 def _extract_zones_from_code(
     code: str | None,
 ) -> tuple[int | None, int | None, str | None]:
@@ -73,29 +78,57 @@ def _extract_zones_from_code(
 # Field name -> type coercer, in output field order.
 _COERCERS: dict[str, Callable[[Any], Any]] = {
     "match_id": _to_str,
+    "home_team": _to_str,
+    "home_team_id": _to_int,
+    "visiting_team": _to_str,
+    "visiting_team_id": _to_int,
+    "point_id": _to_int,
+    "team_touch_id": _to_int,
+    "time": _to_datetime,
     "video_time": _to_int,
     "code": _to_str,
     "team": _to_str,
+    "team_id": _to_int,
     "player_number": _to_int,
     "player_name": _to_str,
     "player_id": _to_int,
     "skill": _to_str,
-    "skill_subtype": _to_str,
     "skill_type": _to_str,
     "evaluation_code": _to_str,
-    "setter_position": _to_int,
+    "evaluation": _to_str,
     "attack_code": _to_str,
+    "attack_description": _to_str,
     "set_code": _to_str,
+    "set_description": _to_str,
     "set_type": _to_str,
     "start_zone": _to_int,
     "end_zone": _to_int,
     "end_subzone": _to_str,
+    "end_cone": _to_int,
+    "skill_subtype": _to_str,
     "num_players_numeric": _to_int,
+    "num_players": _to_str,
+    "special_code": _to_str,
+    "timeout": bool,
+    "end_of_set": bool,
+    "substitution": bool,
+    "point": bool,
     "home_team_score": _to_int,
     "visiting_team_score": _to_int,
-    "home_setter_position": _to_int,
-    "visiting_setter_position": _to_int,
-    "custom_code": _to_str,
+    "home_score_start_of_point": _to_int,
+    "visiting_score_start_of_point": _to_int,
+    "home_player_id1": _to_int,
+    "home_player_id2": _to_int,
+    "home_player_id3": _to_int,
+    "home_player_id4": _to_int,
+    "home_player_id5": _to_int,
+    "home_player_id6": _to_int,
+    "visiting_player_id1": _to_int,
+    "visiting_player_id2": _to_int,
+    "visiting_player_id3": _to_int,
+    "visiting_player_id4": _to_int,
+    "visiting_player_id5": _to_int,
+    "visiting_player_id6": _to_int,
     "home_p1": _to_int,
     "home_p2": _to_int,
     "home_p3": _to_int,
@@ -109,26 +142,29 @@ _COERCERS: dict[str, Callable[[Any], Any]] = {
     "visiting_p5": _to_int,
     "visiting_p6": _to_int,
     "start_coordinate": _to_str,
-    "mid_coordinate": _to_str,
-    "end_coordinate": _to_str,
-    "point_phase": _to_str,
-    "attack_phase": _to_str,
     "start_coordinate_x": _to_float,
     "start_coordinate_y": _to_float,
+    "mid_coordinate": _to_str,
     "mid_coordinate_x": _to_float,
     "mid_coordinate_y": _to_float,
+    "end_coordinate": _to_str,
     "end_coordinate_x": _to_float,
     "end_coordinate_y": _to_float,
+    "point_phase": _to_str,
+    "attack_phase": _to_str,
     "set_number": _to_int,
-    "home_team": _to_str,
-    "visiting_team": _to_str,
-    "home_team_id": _to_int,
-    "visiting_team_id": _to_int,
     "point_won_by": _to_str,
+    "winning_attack": bool,
     "serving_team": _to_str,
     "receiving_team": _to_str,
+    "phase": _to_str,
+    "home_setter_position": _to_int,
+    "visiting_setter_position": _to_int,
+    "custom_code": _to_str,
+    "file_line_number": _to_int,
     "rally_number": _to_int,
     "possession_number": _to_int,
+    "setter_position": _to_int,
 }
 
 
@@ -148,9 +184,9 @@ def normalize_play(play: dict[str, Any]) -> dict[str, Any]:
         )
         if normalized["start_zone"] is None:
             normalized["start_zone"] = code_start_zone
-        if normalized["end_zone"] is None:
+        if normalized["end_zone"] is None and normalized["end_cone"] is None:
             normalized["end_zone"] = code_end_zone
-        if normalized["end_subzone"] is None:
+        if normalized["end_subzone"] is None and normalized["end_cone"] is None:
             normalized["end_subzone"] = code_end_subzone
 
     return normalized
