@@ -10,7 +10,6 @@ from .core.players import extract_players
 from .core.plays import extract_plays, extract_score_from_code
 from .core.set_calls import extract_setter_calls
 from .core.teams import extract_teams
-from .core.xml_to_dvw import xml_to_dvw
 from .io.plays import plays_data
 from .types import MatchData, normalize_play
 from .utils.metadata import (
@@ -50,7 +49,6 @@ __all__ = [
     "load_dvw",
     "parse_play_code",
     "read_dv",
-    "xml_to_dvw",
 ]
 
 
