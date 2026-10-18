@@ -168,12 +168,40 @@ _COERCERS: dict[str, Callable[[Any], Any]] = {
 }
 
 
-def normalize_play(play: dict[str, Any]) -> dict[str, Any]:
-    normalized = {name: coercer(play.get(name)) for name, coercer in _COERCERS.items()}
+# Keep the analysis schema in the same column order as the full play schema.
+_ANALYSIS_COERCERS = {
+    name: coercer
+    for name, coercer in _COERCERS.items()
+    if name
+    not in {
+        "time",
+        "video_time",
+        "custom_code",
+        "special_code",
+        "num_players",
+        "num_players_numeric",
+    }
+    and "coordinate" not in name
+    and not name.startswith(("home_p", "visiting_p"))
+}
 
+
+def normalize_play(play: dict[str, Any]) -> dict[str, Any]:
+    normalized = _normalize_play_fields(play, _COERCERS)
     for key, value in play.items():
         if key not in _COERCERS:
             normalized[key] = value
+    return normalized
+
+
+def _normalize_analysis_play(play: dict[str, Any]) -> dict[str, Any]:
+    return _normalize_play_fields(play, _ANALYSIS_COERCERS)
+
+
+def _normalize_play_fields(
+    play: dict[str, Any], coercers: dict[str, Callable[[Any], Any]]
+) -> dict[str, Any]:
+    normalized = {name: coercer(play.get(name)) for name, coercer in coercers.items()}
 
     if normalized["player_name"] is None and normalized["player_number"] is not None:
         normalized["player_name"] = f"Player {normalized['player_number']}"

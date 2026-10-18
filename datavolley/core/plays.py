@@ -47,6 +47,12 @@ def parse_play_line(line: str, line_number: int) -> dict | None:
     Returns:
         Dictionary with play information or None if invalid
     """
+    return _parse_play_line(line, line_number)
+
+
+def _parse_play_line(
+    line: str, line_number: int, *, analysis_only: bool = False
+) -> dict | None:
     # Split by semicolon
     parts = line.split(";")
 
@@ -56,7 +62,7 @@ def parse_play_line(line: str, line_number: int) -> dict | None:
         visiting_setter_position = parts[10] if len(parts) > 10 else None
 
         custom_code = None
-        if code and len(code) > 14:
+        if not analysis_only and code and len(code) > 14:
             last_tilde_idx = code.rfind("~")
             if last_tilde_idx != -1 and last_tilde_idx < len(code) - 1:
                 potential_custom = code[last_tilde_idx + 1 :]
@@ -96,21 +102,22 @@ def parse_play_line(line: str, line_number: int) -> dict | None:
             if code and code.startswith("a")
             else (home_setter_position if code and code.startswith("*") else None),
             "video_time": int(parts[12])
-            if len(parts) > 12 and parts[12].isdigit()
+            if not analysis_only and len(parts) > 12 and parts[12].isdigit()
             else None,
         }
 
-        # Add home team rotation data [14:20] -> home_p1, home_p2, ..., home_p6
-        home_positions = parts[14:20] if len(parts) > 14 else []
-        for i, position in enumerate(home_positions):
-            if i < 6:  # Only take first 6 positions
-                play_data[f"home_p{i + 1}"] = position if position else None
+        if not analysis_only:
+            # Add home team rotation data [14:20] -> home_p1, home_p2, ..., home_p6
+            home_positions = parts[14:20] if len(parts) > 14 else []
+            for i, position in enumerate(home_positions):
+                if i < 6:  # Only take first 6 positions
+                    play_data[f"home_p{i + 1}"] = position if position else None
 
-        # Add visiting team rotation data [20:26] -> visiting_p1, visiting_p2, ..., visiting_p6
-        visiting_positions = parts[20:26] if len(parts) > 20 else []
-        for i, position in enumerate(visiting_positions):
-            if i < 6:  # Only take first 6 positions
-                play_data[f"visiting_p{i + 1}"] = position if position else None
+            # Add visiting team rotation data [20:26] -> visiting_p1, ..., visiting_p6
+            visiting_positions = parts[20:26] if len(parts) > 20 else []
+            for i, position in enumerate(visiting_positions):
+                if i < 6:  # Only take first 6 positions
+                    play_data[f"visiting_p{i + 1}"] = position if position else None
 
         return play_data
 
@@ -130,6 +137,10 @@ def extract_plays(raw_content: str) -> list[dict]:
     Returns:
         List of play dictionaries with scores propagated to all plays
     """
+    return _extract_plays(raw_content)
+
+
+def _extract_plays(raw_content: str, *, analysis_only: bool = False) -> list[dict]:
     # Find the [3SCOUT] section that continues to the end of file
     scout_pattern = r"\[3SCOUT\](.*?)(?=$)"
     match = re.search(scout_pattern, raw_content, re.DOTALL)
@@ -138,8 +149,10 @@ def extract_plays(raw_content: str) -> list[dict]:
         return []
 
     scout_header_line = raw_content[: match.start()].count("\n") + 1
-    match_date_match = re.search(r"\[3MATCH\]\s+(\d{2}/\d{2}/\d{4})", raw_content)
-    match_date = match_date_match.group(1) if match_date_match else None
+    match_date = None
+    if not analysis_only:
+        match_date_match = re.search(r"\[3MATCH\]\s+(\d{2}/\d{2}/\d{4})", raw_content)
+        match_date = match_date_match.group(1) if match_date_match else None
     lines = []
     for line_offset, line in enumerate(match.group(1).split("\n")):
         stripped_line = line.strip()
@@ -154,10 +167,15 @@ def extract_plays(raw_content: str) -> list[dict]:
     # Parse each play line
     for line_num, (file_line_number, line) in enumerate(lines):
         if line:
-            play_data = parse_play_line(line, line_num + 1)
+            play_data = _parse_play_line(
+                line, line_num + 1, analysis_only=analysis_only
+            )
             if play_data:
                 play_data["file_line_number"] = file_line_number
-                play_data["time"] = _parse_event_time(match_date, play_data.get("time"))
+                if not analysis_only:
+                    play_data["time"] = _parse_event_time(
+                        match_date, play_data.get("time")
+                    )
                 # Reset running score when the set changes
                 play_set = play_data.get("set_number")
                 if play_set is not None and play_set != current_set:

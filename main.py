@@ -6,7 +6,7 @@ import datavolley as dv
 
 
 def main():
-    return dv.read_dv(dv.example_file())
+    return dv.load_dvw(dv.example_file())
 
 
 if __name__ == "__main__":

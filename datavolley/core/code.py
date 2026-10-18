@@ -201,6 +201,19 @@ def parse_play_code(
     Returns:
         Dictionary with parsed code components or None if invalid
     """
+    return _parse_play_code(raw_content, code, use_cones=use_cones)
+
+
+def _parse_play_code(
+    raw_content: str,
+    code: str,
+    *,
+    use_cones: bool | None = None,
+    teams: dict[str, str | None] | None = None,
+    player_lookup: dict[tuple[str, int], tuple[str | None, str | None]] | None = None,
+    analysis_only: bool = False,
+) -> ParsedPlayCode | None:
+    """Decode a play, optionally reusing per-match team and player lookups."""
     if not code or len(code) < 2:
         return None
 
@@ -230,8 +243,8 @@ def parse_play_code(
         "custom_code": None,
     }
 
-    # Extract Team using inline team extraction (avoid circular imports)
-    teams = _extract_teams_lightweight(raw_content)
+    if teams is None:
+        teams = _extract_teams_lightweight(raw_content)
     if code.startswith("*"):
         parsed["team"] = teams.get("team_1")
     elif code.startswith("a"):
@@ -249,34 +262,27 @@ def parse_play_code(
     if player_token.isdigit():
         parsed["player_number"] = int(player_token)
 
-    # Extract Player details using inline player extraction (avoid circular imports)
-    players = _extract_players_lightweight(raw_content)
-    if code.startswith("*") and parsed["player_number"]:
-        player = next(
-            (
-                p
-                for p in players["home"]
-                if p["player_number"] is not None
-                and int(p["player_number"]) == parsed["player_number"]
-            ),
-            None,
-        )
-        if player:
-            parsed["player_name"] = player["full_name"]
-            parsed["player_id"] = player["player_id"]
-    elif code.startswith("a") and parsed["player_number"]:
-        player = next(
-            (
-                p
-                for p in players["visiting"]
-                if p["player_number"] is not None
-                and int(p["player_number"]) == parsed["player_number"]
-            ),
-            None,
-        )
-        if player:
-            parsed["player_name"] = player["full_name"]
-            parsed["player_id"] = player["player_id"]
+    player_details = None
+    if player_lookup is None:
+        players = _extract_players_lightweight(raw_content)
+        if parsed["player_number"]:
+            side = "home" if code.startswith("*") else "visiting"
+            player = next(
+                (
+                    p
+                    for p in players[side]
+                    if p["player_number"] is not None
+                    and int(p["player_number"]) == parsed["player_number"]
+                ),
+                None,
+            )
+            if player:
+                player_details = (player["full_name"], player["player_id"])
+    elif parsed["player_number"]:
+        player_details = player_lookup.get((code[0], parsed["player_number"]))
+
+    if player_details is not None:
+        parsed["player_name"], parsed["player_id"] = player_details
 
     skill_mapping = {
         "S": "Serve",
@@ -318,15 +324,18 @@ def parse_play_code(
         parsed["end_zone"] = direction if direction not in {"", "~"} else None
         parsed["end_subzone"] = payload[8:9] if payload[8:9] not in {"", "~"} else None
 
-    num_players = payload[10:11]
-    if num_players.isdigit():
-        parsed["num_players_numeric"] = int(num_players)
-    parsed["num_players"] = _decode_num_players(skill, parsed["num_players_numeric"])
-    parsed["special_code"] = _decode_special_code(
-        skill, evaluation_code, payload[11:12]
-    )
-    custom_code = payload[12:]
-    parsed["custom_code"] = custom_code or None
+    if not analysis_only:
+        num_players = payload[10:11]
+        if num_players.isdigit():
+            parsed["num_players_numeric"] = int(num_players)
+        parsed["num_players"] = _decode_num_players(
+            skill, parsed["num_players_numeric"]
+        )
+        parsed["special_code"] = _decode_special_code(
+            skill, evaluation_code, payload[11:12]
+        )
+        custom_code = payload[12:]
+        parsed["custom_code"] = custom_code or None
 
     # Extract skill_type (position 4) - full description like "High ball attack"
     if parsed["skill"] and len(code) > 4:

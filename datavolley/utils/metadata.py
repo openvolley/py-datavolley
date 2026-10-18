@@ -314,6 +314,8 @@ def _assign_point_metadata(
     home_team: str,
     visiting_team: str,
     players: dict[str, list[dict]] | None = None,
+    *,
+    include_lineups: bool = True,
 ) -> None:
     point_groups: dict[int | None, list[dict]] = {}
     for play in plays:
@@ -368,22 +370,25 @@ def _assign_point_metadata(
         current_home_score = end_home_score
         current_visiting_score = end_visiting_score
 
-    player_maps: dict[str, dict[str, object]] = {"home": {}, "visiting": {}}
-    if players:
-        for side in player_maps:
-            player_maps[side] = {
-                str(player.get("player_number")): player.get("player_id")
-                for player in players.get(side, [])
-                if player.get("player_number") is not None
-            }
+    if include_lineups:
+        player_maps: dict[str, dict[str, object]] = {"home": {}, "visiting": {}}
+        if players:
+            for side in player_maps:
+                player_maps[side] = {
+                    str(player.get("player_number")): player.get("player_id")
+                    for player in players.get(side, [])
+                    if player.get("player_number") is not None
+                }
 
-    for play in plays:
-        for side in ("home", "visiting"):
-            for position in range(1, 7):
-                number = play.get(f"{side}_p{position}")
-                play[f"{side}_player_id{position}"] = (
-                    player_maps[side].get(str(number)) if number is not None else None
-                )
+        for play in plays:
+            for side in ("home", "visiting"):
+                for position in range(1, 7):
+                    number = play.get(f"{side}_p{position}")
+                    play[f"{side}_player_id{position}"] = (
+                        player_maps[side].get(str(number))
+                        if number is not None
+                        else None
+                    )
 
     reception_touch_ids = {
         play.get("team_touch_id") for play in plays if play.get("skill") == "Reception"
@@ -434,6 +439,17 @@ def assign_rally_numbers_to_plays(
         List of plays with rally_number, point_won_by, point_phase, attack_phase,
         serving_team, receiving_team, and possession_number fields added
     """
+    return _assign_rally_numbers_to_plays(plays, home_team, visiting_team, players)
+
+
+def _assign_rally_numbers_to_plays(
+    plays: list,
+    home_team: str | None = None,
+    visiting_team: str | None = None,
+    players: dict[str, list[dict]] | None = None,
+    *,
+    include_lineups: bool = True,
+) -> list:
     if not plays:
         return plays
 
@@ -589,7 +605,9 @@ def assign_rally_numbers_to_plays(
 
             play["possession_number"] = possession_number
 
-    _assign_point_metadata(plays, home_team, visiting_team, players)
+    _assign_point_metadata(
+        plays, home_team, visiting_team, players, include_lineups=include_lineups
+    )
     return plays
 
 
