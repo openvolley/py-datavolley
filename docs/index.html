@@ -1,0 +1,151 @@
+<html lang="en">
+   <head>
+       <meta charset="UTF-8">
+       <style> html, body { margin: 0; padding: 0; } </style>
+       <script type="text/javascript" data-lets-plot-script="library" src="https://cdn.jsdelivr.net/gh/JetBrains/lets-plot@v4.11.0/js-package/distr/lets-plot.min.js"></script>
+   </head>
+   <body>
+          <div id="PpwyfD" ></div>
+   <script type="text/javascript" data-lets-plot-script="plot">
+
+   (function() {
+   // ----------
+
+   const forceImmediateRender = false;
+   const responsive = false;
+
+   let sizing = {
+       width_mode: "MIN",
+       height_mode: "SCALED",
+       width: null,
+       height: null
+   };
+
+   const preferredWidth = document.body.dataset.letsPlotPreferredWidth;
+   if (preferredWidth !== undefined) {
+       sizing = {
+           width_mode: 'FIXED',
+           height_mode: 'SCALED',
+           width: parseFloat(preferredWidth)
+       };
+   }
+
+   const containerDiv = document.getElementById("PpwyfD");
+   let fig = null;
+
+   function renderPlot() {
+       if (fig === null) {
+           const plotSpec = {
+"data":{
+"set":["Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 1","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 2","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3","Set 3"],
+"rally":[0.0,0.0,1.0,1.0,2.0,2.0,3.0,3.0,4.0,4.0,5.0,5.0,6.0,6.0,7.0,7.0,8.0,8.0,9.0,9.0,10.0,10.0,11.0,11.0,12.0,12.0,13.0,13.0,14.0,14.0,15.0,15.0,16.0,16.0,17.0,17.0,18.0,18.0,19.0,19.0,20.0,20.0,21.0,21.0,22.0,22.0,23.0,23.0,24.0,24.0,25.0,25.0,26.0,26.0,27.0,27.0,28.0,28.0,29.0,29.0,30.0,30.0,31.0,31.0,32.0,32.0,33.0,33.0,34.0,34.0,35.0,35.0,36.0,36.0,37.0,37.0,38.0,38.0,39.0,39.0,40.0,40.0,41.0,41.0,42.0,42.0,0.0,0.0,1.0,1.0,2.0,2.0,3.0,3.0,4.0,4.0,5.0,5.0,6.0,6.0,7.0,7.0,8.0,8.0,9.0,9.0,10.0,10.0,11.0,11.0,12.0,12.0,13.0,13.0,14.0,14.0,15.0,15.0,16.0,16.0,17.0,17.0,18.0,18.0,19.0,19.0,20.0,20.0,21.0,21.0,22.0,22.0,23.0,23.0,24.0,24.0,25.0,25.0,26.0,26.0,27.0,27.0,28.0,28.0,29.0,29.0,30.0,30.0,31.0,31.0,32.0,32.0,33.0,33.0,34.0,34.0,35.0,35.0,36.0,36.0,37.0,37.0,38.0,38.0,39.0,39.0,0.0,0.0,1.0,1.0,2.0,2.0,3.0,3.0,4.0,4.0,5.0,5.0,6.0,6.0,7.0,7.0,8.0,8.0,9.0,9.0,10.0,10.0,11.0,11.0,12.0,12.0,13.0,13.0,14.0,14.0,15.0,15.0,16.0,16.0,17.0,17.0,18.0,18.0,19.0,19.0,20.0,20.0,21.0,21.0,22.0,22.0,23.0,23.0,24.0,24.0,25.0,25.0,26.0,26.0,27.0,27.0,28.0,28.0,29.0,29.0,30.0,30.0,31.0,31.0,32.0,32.0,33.0,33.0,34.0,34.0,35.0,35.0,36.0,36.0,37.0,37.0,38.0,38.0,39.0,39.0,40.0,40.0,41.0,41.0,42.0,42.0,43.0,43.0,44.0,44.0],
+"team":["University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton","University of Louisville","University of Dayton"],
+"score":[0.0,0.0,1.0,0.0,2.0,0.0,3.0,0.0,4.0,0.0,5.0,0.0,5.0,1.0,6.0,1.0,7.0,1.0,7.0,2.0,8.0,2.0,8.0,3.0,9.0,3.0,9.0,4.0,9.0,5.0,10.0,5.0,10.0,6.0,11.0,6.0,12.0,6.0,13.0,6.0,13.0,7.0,14.0,7.0,14.0,8.0,15.0,8.0,15.0,9.0,16.0,9.0,17.0,9.0,17.0,10.0,17.0,11.0,17.0,12.0,18.0,12.0,19.0,12.0,20.0,12.0,21.0,12.0,22.0,12.0,23.0,12.0,23.0,13.0,23.0,14.0,23.0,15.0,23.0,16.0,24.0,16.0,24.0,17.0,25.0,17.0,0.0,0.0,1.0,0.0,1.0,1.0,1.0,2.0,2.0,2.0,3.0,2.0,3.0,3.0,4.0,3.0,4.0,4.0,4.0,5.0,4.0,6.0,5.0,6.0,5.0,7.0,6.0,7.0,7.0,7.0,7.0,8.0,8.0,8.0,9.0,8.0,9.0,9.0,10.0,9.0,11.0,9.0,12.0,9.0,13.0,9.0,14.0,9.0,15.0,9.0,16.0,9.0,16.0,10.0,17.0,10.0,18.0,10.0,19.0,10.0,19.0,11.0,20.0,11.0,20.0,12.0,21.0,12.0,22.0,12.0,22.0,13.0,23.0,13.0,24.0,13.0,24.0,14.0,25.0,14.0,0.0,0.0,1.0,0.0,2.0,0.0,2.0,1.0,2.0,2.0,3.0,2.0,4.0,2.0,4.0,3.0,5.0,3.0,5.0,4.0,6.0,4.0,6.0,5.0,7.0,5.0,7.0,6.0,7.0,7.0,7.0,8.0,8.0,8.0,8.0,9.0,8.0,10.0,8.0,11.0,8.0,12.0,8.0,13.0,9.0,13.0,10.0,13.0,10.0,14.0,11.0,14.0,12.0,14.0,12.0,15.0,13.0,15.0,14.0,15.0,14.0,16.0,14.0,17.0,14.0,18.0,15.0,18.0,16.0,18.0,17.0,18.0,18.0,18.0,19.0,18.0,20.0,18.0,21.0,18.0,22.0,18.0,23.0,18.0,24.0,18.0,24.0,19.0,25.0,19.0]
+},
+"mapping":{
+"x":"rally",
+"y":"score",
+"color":"team"
+},
+"data_meta":{
+"series_annotations":[{
+"type":"str",
+"column":"set"
+},{
+"type":"int",
+"column":"rally"
+},{
+"type":"str",
+"column":"team"
+},{
+"type":"int",
+"column":"score"
+}]
+},
+"facet":{
+"name":"wrap",
+"facets":"set",
+"ncol":3.0,
+"scales":"free_x",
+"order":1.0,
+"dir":"h"
+},
+"ggtitle":{
+"text":"Score progression by set"
+},
+"guides":{
+"x":{
+"title":"Rally"
+},
+"y":{
+"title":"Score"
+},
+"color":{
+"title":"Team"
+}
+},
+"theme":{
+"name":"minimal",
+"legend_position":"bottom"
+},
+"ggsize":{
+"width":960.0,
+"height":400.0
+},
+"kind":"plot",
+"scales":[],
+"layers":[{
+"geom":"step",
+"mapping":{
+},
+"data_meta":{
+},
+"data":{
+}
+}],
+"metainfo_list":[],
+"spec_id":"1"
+};
+           fig = LetsPlot.buildPlotFromProcessedSpecs(plotSpec, containerDiv, sizing);
+       } else {
+           fig.updateView({});
+       }
+   }
+
+   const renderImmediately =
+       forceImmediateRender || (
+           sizing.width_mode === 'FIXED' &&
+           (sizing.height_mode === 'FIXED' || sizing.height_mode === 'SCALED')
+       );
+
+   if (renderImmediately) {
+       renderPlot();
+   }
+
+   if (!renderImmediately || responsive) {
+       // Set up observer for initial sizing or continuous monitoring
+       var observer = new ResizeObserver(function(entries) {
+           for (let entry of entries) {
+               if (entry.contentBoxSize &&
+                   entry.contentBoxSize[0].inlineSize > 0) {
+                   if (!responsive && observer) {
+                       observer.disconnect();
+                       observer = null;
+                   }
+                   renderPlot();
+                   if (!responsive) {
+                       break;
+                   }
+               }
+           }
+       });
+
+       observer.observe(containerDiv);
+   }
+
+   // ----------
+   })();
+
+   </script>
+   </body>
+</html>
