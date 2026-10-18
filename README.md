@@ -47,11 +47,6 @@ for dvw_file in dvw_files:
 print(f"{len(dvw_files)} files, {len(all_plays)} events")
 ```
 
-dvw_files = [str(path) for path in sorted(match_folder.glob("*.dvw"))]
-
-```
-
-Replace `C:\path\to\matches` with the folder containing your `.dvw` files, then use the same `extend()` loop above.
 
 Each row retains `source_file`. Include it alongside `match_id`, `set_number` and `rally_number` when grouping rallies across files.
 
