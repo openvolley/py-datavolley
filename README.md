@@ -29,7 +29,31 @@ attacks = [play for play in plays if play["skill"] == "Attack"]
 print(f"{len(plays)} events, {len(attacks)} attacks")
 ```
 
-Replace `dv.example_file()` with your own file path to analyze another match. Use `dv.example_file_list()` to find all bundled examples.
+Replace `dv.example_file()` with your own file path to analyze another match.
+
+### Read multiple DVW files
+
+`dv.example_file_list()` returns a list of paths to all bundled DVW files. Use `extend()` to collect every file's plays in one flat list:
+
+```python
+import datavolley as dv
+
+dvw_files = dv.example_file_list()
+
+all_plays = []
+for dvw_file in dvw_files:
+    all_plays.extend(dv.read_plays(dvw_file))
+
+print(f"{len(dvw_files)} files, {len(all_plays)} events")
+```
+
+dvw_files = [str(path) for path in sorted(match_folder.glob("*.dvw"))]
+
+```
+
+Replace `C:\path\to\matches` with the folder containing your `.dvw` files, then use the same `extend()` loop above.
+
+Each row retains `source_file`. Include it alongside `match_id`, `set_number` and `rally_number` when grouping rallies across files.
 
 Plays are plain dictionaries: work with them directly or pass them to pandas or Polars. Normalized readers convert numeric fields to Python numbers, trim strings, use `None` for missing data, and derive zones from scout codes when available.
 
@@ -162,6 +186,257 @@ print(match["match_result"])
 | `setter_calls` | `list[dict]` | Setter-call definitions |
 | `plays` | `list[dict]` | The same normalized rows returned by `read_dv()` |
 | `match_result` | `dict` | Sets won, sets played, and match winner; empty if scores are absent |
+
+### Nested fields
+
+Expand a section for every field returned inside that match entry. Types below distinguish source metadata from normalized play rows: roster shirt numbers and player IDs remain strings, while their play-row equivalents are integers or `None`.
+
+<details>
+<summary><code>teams</code> — 4 fields</summary>
+
+Keys are added for each successfully parsed team line. Missing or invalid team lines can leave the dictionary empty or omit that team's keys.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `team_1_id` | `int` or `None` | Home team ID; `None` if the source ID is not numeric |
+| `team_1` | `str` or `None` | Home team name |
+| `team_2_id` | `int` or `None` | Visiting team ID; `None` if the source ID is not numeric |
+| `team_2` | `str` or `None` | Visiting team name |
+
+</details>
+
+<details>
+<summary><code>set_scores</code> — score keys for each parsed set</summary>
+
+Set numbers start at 1. Only sets with parseable final scores are included; missing scores produce an empty dictionary.
+
+| Field pattern | Type | Description |
+| --- | --- | --- |
+| `team_1_set_{n}` | `int` | Home team's final score in set `n`, for example `team_1_set_1` |
+| `team_2_set_{n}` | `int` | Visiting team's final score in set `n`, for example `team_2_set_1` |
+
+</details>
+
+<details>
+<summary><code>players</code> — roster containers and all 7 player fields</summary>
+
+Both roster keys are always present, with empty lists when no players are parsed for that side.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `home` | `list[dict]` | Home team roster |
+| `visiting` | `list[dict]` | Visiting team roster |
+
+Each player dictionary contains:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `team` | `str` or `None` | Team name; falls back to `Home` or `Visiting` if the team-name key is absent |
+| `player_number` | `str` | Shirt number as stored, including leading zeros; defaults to `"0"` if absent |
+| `player_id` | `str` | Source player ID; falls back to `player_{player_number}` if absent |
+| `last_name` | `str` or `None` | Player's last name |
+| `first_name` | `str` or `None` | Player's first name |
+| `role` | `str` or `None` | Role code from the roster, without decoding |
+| `full_name` | `str` or `None` | Available first and last names joined with a space |
+
+</details>
+
+<details>
+<summary><code>attack_combinations</code> — all 12 fields per definition</summary>
+
+An empty list means no valid attack definitions were parsed. `field_*` names identify uninterpreted source columns by zero-based index. `raw_data` retains every semicolon-separated column, including empty strings.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `code` | `str` or `None` | Attack-combination code, such as `V5` or `X9` |
+| `zone` | `int` or `None` | Numeric zone from the definition |
+| `position` | `str` or `None` | Source position code, such as `R`, `L`, or `C` |
+| `type` | `str` or `None` | Source attack-type code |
+| `description` | `str` or `None` | Human-readable attack description |
+| `field_5` | `str` or `None` | Uninterpreted column at index 5; may be an empty string |
+| `color_code` | `int` or `None` | Numeric color code |
+| `position_code` | `int` or `None` | Numeric position code |
+| `set_direction` | `str` or `None` | Source set-direction code, such as `F`, `B`, or `P` |
+| `backrow` | `bool` | `True` when the back-row column is `"1"`; otherwise `False` |
+| `field_10` | `str` or `None` | Uninterpreted column at index 10; may be an empty string |
+| `raw_data` | `list[str]` | Original split source columns |
+
+</details>
+
+<details>
+<summary><code>setter_calls</code> — all 12 fields per definition</summary>
+
+An empty list means no valid setter-call definitions were parsed. As with attack combinations, `field_*` columns are retained without interpretation and `raw_data` includes empty source columns.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `code` | `str` or `None` | Setter-call code, such as `K1` or `KM` |
+| `field_1` | `str` | Uninterpreted column at index 1; may be an empty string |
+| `description` | `str` or `None` | Human-readable setter-call description |
+| `field_3` | `str` or `None` | Uninterpreted column at index 3; may be an empty string |
+| `color_code` | `int` or `None` | Numeric color code |
+| `position_1` | `int` or `None` | First numeric position field |
+| `position_2` | `int` or `None` | Second numeric position field |
+| `position_3` | `int` or `None` | Third numeric position field |
+| `additional_codes` | `str` or `None` | Additional codes as a comma-separated source string |
+| `field_9` | `int` or `None` | Uninterpreted numeric column at index 9 |
+| `raw_data` | `list[str]` | Original split source columns |
+| `additional_codes_list` | `list[str]` | Additional codes split and trimmed; empty when none are present |
+
+</details>
+
+<details>
+<summary><code>plays</code> — all 88 normalized fields per event</summary>
+
+Every play dictionary has all 88 keys below. An empty list means no scout events were parsed. Missing or unconvertible data uses `None`; event flags are always booleans. These are also the fields returned by `read_dv()`.
+
+**Identifiers and provenance**
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `match_id` | `str` or `None` | Match identifier, repeated on each event |
+| `set_number` | `int` or `None` | Set number from the scout row |
+| `rally_number` | `int` or `None` | One-based rally counter within the set, advanced by serves |
+| `point_id` | `int` or `None` | Zero-based, match-wide point-group ID; also advances around timeouts |
+| `team_touch_id` | `int` or `None` | Zero-based, match-wide group ID; changes on team/point changes or consecutive attacks |
+| `possession_number` | `int` or `None` | Possession counter within the rally; the serve starts at 0 |
+| `file_line_number` | `int` or `None` | One-based line number in the input file |
+
+**Teams and player**
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `home_team` | `str` or `None` | Home team name |
+| `home_team_id` | `int` or `None` | Home team ID |
+| `visiting_team` | `str` or `None` | Visiting team name |
+| `visiting_team_id` | `int` or `None` | Visiting team ID |
+| `team` | `str` or `None` | Team associated with the event |
+| `team_id` | `int` or `None` | ID of the team associated with the event |
+| `player_number` | `int` or `None` | Acting player's shirt number |
+| `player_name` | `str` or `None` | Roster name; falls back to `Player {player_number}` when only a number is available |
+| `player_id` | `int` or `None` | Acting player's roster ID, converted to an integer; nonnumeric IDs become `None` |
+
+**Action and scout codes**
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `code` | `str` or `None` | Original scout code |
+| `skill` | `str` or `None` | Decoded skill, such as `Serve`, `Reception`, `Set`, `Attack`, or `Point` |
+| `skill_type` | `str` or `None` | Decoded skill-type description, such as `High ball attack` |
+| `skill_subtype` | `str` or `None` | Skill-specific subtype, such as `Hard`, `Tip`, or `Jump Float` |
+| `evaluation_code` | `str` or `None` | Evaluation symbol from the scout code, such as `#`, `+`, or `=` |
+| `evaluation` | `str` or `None` | Skill-specific evaluation description |
+| `attack_code` | `str` or `None` | Attack-combination code for an attack |
+| `attack_description` | `str` or `None` | Matching attack definition; `unknown attack code` if no definition matches |
+| `set_code` | `str` or `None` | Setter-call code for a set |
+| `set_description` | `str` or `None` | Matching setter-call description; `unknown set code` if no definition matches |
+| `set_type` | `str` or `None` | Set-type character retained from the scout code |
+| `num_players_numeric` | `int` or `None` | Numeric block/reception formation code; not always a literal player count |
+| `num_players` | `str` or `None` | Skill-specific description of the numeric formation code |
+| `special_code` | `str` or `None` | Decoded, skill/evaluation-specific special-code description |
+| `custom_code` | `str` or `None` | Custom trailing data retained from the scout code |
+
+**Zones and coordinates**
+
+Zones and cones follow the file's scouting mode. Raw coordinate strings can retain missing-value sentinels such as `-1-1`; the converted x/y fields are `None` for invalid or missing coordinates. Converted coordinates use the DataVolley plotting scale, with sidelines at x = 0.5/3.5, baselines at y = 0.5/6.5, and the net at y = 3.5.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `start_zone` | `int` or `None` | Starting court zone |
+| `end_zone` | `int` or `None` | Ending court zone; not filled from an attack cone |
+| `end_subzone` | `str` or `None` | Ending subzone code |
+| `end_cone` | `int` or `None` | Attack direction cone when the file uses cone scouting |
+| `start_coordinate` | `str` or `None` | Raw starting coordinate index |
+| `start_coordinate_x` | `float` or `None` | Converted starting x coordinate |
+| `start_coordinate_y` | `float` or `None` | Converted starting y coordinate |
+| `mid_coordinate` | `str` or `None` | Raw intermediate coordinate index |
+| `mid_coordinate_x` | `float` or `None` | Converted intermediate x coordinate |
+| `mid_coordinate_y` | `float` or `None` | Converted intermediate y coordinate |
+| `end_coordinate` | `str` or `None` | Raw ending coordinate index |
+| `end_coordinate_x` | `float` or `None` | Converted ending x coordinate |
+| `end_coordinate_y` | `float` or `None` | Converted ending y coordinate |
+
+**Event flags and scores**
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `point` | `bool` | Event is a point/score record |
+| `timeout` | `bool` | Event is a timeout record |
+| `substitution` | `bool` | Event is a substitution record; lineup records are excluded from this flag |
+| `end_of_set` | `bool` | Event marks the end of a set |
+| `winning_attack` | `bool` | Winning attack, including one inferred from a following dig/block error |
+| `home_team_score` | `int` or `None` | Home score at the end of the point group, propagated to its events |
+| `visiting_team_score` | `int` or `None` | Visiting score at the end of the point group, propagated to its events |
+| `home_score_start_of_point` | `int` or `None` | Home score before the point group |
+| `visiting_score_start_of_point` | `int` or `None` | Visiting score before the point group |
+
+**Lineups and setter positions**
+
+Lineup shirt numbers come from the scout row. Lineup IDs are resolved against the rosters and normalized to integers; unmatched or nonnumeric IDs become `None`.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `home_p1` | `int` or `None` | Home player's shirt number in rotation slot 1 |
+| `home_p2` | `int` or `None` | Home player's shirt number in rotation slot 2 |
+| `home_p3` | `int` or `None` | Home player's shirt number in rotation slot 3 |
+| `home_p4` | `int` or `None` | Home player's shirt number in rotation slot 4 |
+| `home_p5` | `int` or `None` | Home player's shirt number in rotation slot 5 |
+| `home_p6` | `int` or `None` | Home player's shirt number in rotation slot 6 |
+| `visiting_p1` | `int` or `None` | Visiting player's shirt number in rotation slot 1 |
+| `visiting_p2` | `int` or `None` | Visiting player's shirt number in rotation slot 2 |
+| `visiting_p3` | `int` or `None` | Visiting player's shirt number in rotation slot 3 |
+| `visiting_p4` | `int` or `None` | Visiting player's shirt number in rotation slot 4 |
+| `visiting_p5` | `int` or `None` | Visiting player's shirt number in rotation slot 5 |
+| `visiting_p6` | `int` or `None` | Visiting player's shirt number in rotation slot 6 |
+| `home_player_id1` | `int` or `None` | Resolved home player ID in rotation slot 1 |
+| `home_player_id2` | `int` or `None` | Resolved home player ID in rotation slot 2 |
+| `home_player_id3` | `int` or `None` | Resolved home player ID in rotation slot 3 |
+| `home_player_id4` | `int` or `None` | Resolved home player ID in rotation slot 4 |
+| `home_player_id5` | `int` or `None` | Resolved home player ID in rotation slot 5 |
+| `home_player_id6` | `int` or `None` | Resolved home player ID in rotation slot 6 |
+| `visiting_player_id1` | `int` or `None` | Resolved visiting player ID in rotation slot 1 |
+| `visiting_player_id2` | `int` or `None` | Resolved visiting player ID in rotation slot 2 |
+| `visiting_player_id3` | `int` or `None` | Resolved visiting player ID in rotation slot 3 |
+| `visiting_player_id4` | `int` or `None` | Resolved visiting player ID in rotation slot 4 |
+| `visiting_player_id5` | `int` or `None` | Resolved visiting player ID in rotation slot 5 |
+| `visiting_player_id6` | `int` or `None` | Resolved visiting player ID in rotation slot 6 |
+| `home_setter_position` | `int` or `None` | Home setter's rotation position from the scout row |
+| `visiting_setter_position` | `int` or `None` | Visiting setter's rotation position from the scout row |
+| `setter_position` | `int` or `None` | Setter position for the side identified by the event's team prefix |
+
+**Point and attack context**
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `point_phase` | `str` or `None` | Scout point phase: `Breakpoint` or `Sideout`; other source codes are retained |
+| `attack_phase` | `str` or `None` | Scout attack phase: `Reception`, `Transition breakpoint`, or `Transition sideout`; other codes are retained |
+| `phase` | `str` or `None` | Derived play phase: `Serve`, `Reception`, or `Transition` |
+| `point_won_by` | `str` or `None` | Name of the team awarded the point |
+| `serving_team` | `str` or `None` | Serving team name inferred from the point group's serve |
+| `receiving_team` | `str` or `None` | Receiving team name inferred from the serving team |
+
+**Timing**
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `time` | `datetime` or `None` | Match date combined with the event clock; no timezone information |
+| `video_time` | `int` or `None` | Integer video-time value from the scout row |
+
+</details>
+
+<details>
+<summary><code>match_result</code> — all 4 result fields</summary>
+
+Calculated from available final set scores. If no scores are available, this entry is an empty dictionary.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `team_1_sets_won` | `int` | Number of scored sets won by the home team |
+| `team_2_sets_won` | `int` | Number of scored sets won by the visiting team |
+| `total_sets_played` | `int` | Number of sets with final scores for both teams |
+| `match_winner` | `str` | `team_1`, `team_2`, or `tie`, based on sets won |
+
+</details>
 
 ## Data reference
 
