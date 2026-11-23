@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "openvolley-pydatavolley" 
+name = "openvolley-pydatavolley"
 version = "1.0.0"
-authors = [{name = "Tyler Widdison", email = "tylerperrywiddison@gmail.com"}]
+authors = [{ name = "Tyler Widdison", email = "tylerperrywiddison@gmail.com" }]
 description = "Extract data from DataVolley .dvw files and VolleyStation .vsm files"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -17,25 +17,19 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
-dependencies = []
+dependencies = ["ruff>=0.17.6", "ty>=0.0.108"]
 
 [project.optional-dependencies]
 viz = ["lets-plot>=4.11"]
 
 [dependency-groups]
-dev = [
-    "ruff>=0.17.1",
-    "ty>=0.0.88",
-]
+dev = ["ruff>=0.17.1", "ty>=0.0.88"]
 
 [tool.ruff.lint]
 extend-select = ["DTZ"]
 
 [tool.hatch.build.targets.wheel]
-include = [
-    "datavolley/",
-    "datavolley/data/*.dvw"
-]
+include = ["datavolley/", "datavolley/data/*.dvw"]
 
 [project.urls]
 Homepage = "https://github.com/openvolley/py-datavolley"
