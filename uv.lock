@@ -41,12 +41,8 @@ wheels = [
 
 [[package]]
 name = "openvolley-pydatavolley"
-version = "1.0.0"
+version = "1.1.0"
 source = { editable = "." }
-dependencies = [
-    { name = "ruff" },
-    { name = "ty" },
-]
 
 [package.optional-dependencies]
 viz = [
@@ -60,11 +56,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "lets-plot", marker = "extra == 'viz'", specifier = ">=4.11" },
-    { name = "ruff", specifier = ">=0.17.6" },
-    { name = "ty", specifier = ">=0.0.108" },
-]
+requires-dist = [{ name = "lets-plot", marker = "extra == 'viz'", specifier = ">=4.11" }]
 provides-extras = ["viz"]
 
 [package.metadata.requires-dev]
