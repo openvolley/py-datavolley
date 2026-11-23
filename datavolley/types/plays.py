@@ -186,8 +186,9 @@ _ANALYSIS_COERCERS = {
 }
 
 
-def normalize_play(play: dict[str, Any]) -> dict[str, Any]:
-    normalized = _normalize_play_fields(play, _COERCERS)
+def normalize_play(play: dict[str, Any], *, preserve_ids: bool = False) -> dict[str, Any]:
+    """Normalize a play, optionally retaining VolleyStation's string identifiers."""
+    normalized = _normalize_play_fields(play, _COERCERS, preserve_ids=preserve_ids)
     for key, value in play.items():
         if key not in _COERCERS:
             normalized[key] = value
@@ -199,9 +200,19 @@ def _normalize_analysis_play(play: dict[str, Any]) -> dict[str, Any]:
 
 
 def _normalize_play_fields(
-    play: dict[str, Any], coercers: dict[str, Callable[[Any], Any]]
+    play: dict[str, Any],
+    coercers: dict[str, Callable[[Any], Any]],
+    *,
+    preserve_ids: bool = False,
 ) -> dict[str, Any]:
-    normalized = {name: coercer(play.get(name)) for name, coercer in coercers.items()}
+    normalized: dict[str, Any] = {}
+    for name, coercer in coercers.items():
+        if preserve_ids and (
+            name in {"team_id", "home_team_id", "visiting_team_id", "player_id"}
+            or name.startswith(("home_player_id", "visiting_player_id"))
+        ):
+            coercer = _to_str
+        normalized[name] = coercer(play.get(name))
 
     if normalized["player_name"] is None and normalized["player_number"] is not None:
         normalized["player_name"] = f"Player {normalized['player_number']}"

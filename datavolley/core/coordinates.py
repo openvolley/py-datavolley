@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from math import floor, isfinite
+
 
 def dv_index2xy(index: str | int | None) -> tuple[float, float] | None:
     """Convert a DataVolley coordinate index to (x, y) court coordinates.
@@ -40,3 +42,12 @@ def dv_index2xy(index: str | int | None) -> tuple[float, float] | None:
     y = 0.5 + 6.0 * (j - 10.5) / 81
 
     return (x, y)
+
+
+def dv_xy2index(x: float | None, y: float | None) -> int | None:
+    """Find a DataVolley grid cell, clamping coordinates outside the grid."""
+    if x is None or y is None or not isfinite(x) or not isfinite(y):
+        return None
+    column = min(100, max(1, floor((x - 0.5) * 80 / 3 + 11)))
+    row = min(101, max(1, floor((y - 0.5) * 81 / 6 + 11)))
+    return column + (row - 1) * 100

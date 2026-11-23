@@ -390,6 +390,11 @@ def _assign_point_metadata(
                         else None
                     )
 
+    _assign_play_phases(plays)
+
+
+def _assign_play_phases(plays: list[dict]) -> None:
+    """Assign shared touch-sequence phases and inferred winning attacks."""
     reception_touch_ids = {
         play.get("team_touch_id") for play in plays if play.get("skill") == "Reception"
     }

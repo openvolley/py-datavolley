@@ -1,6 +1,6 @@
 # py-datavolley
 
-Parse DataVolley `.dvw` scouting files into Python dictionaries for volleyball analysis.
+Parse DataVolley `.dvw` and indoor VolleyStation `.vsm` scouting files into Python dictionaries for volleyball analysis.
 
 **Python 3.11+ · Zero runtime dependencies · Optional interactive charts**
 
@@ -56,14 +56,35 @@ Plays are plain dictionaries: work with them directly or pass them to pandas or 
 
 Start with `read_plays()` for play-focused analysis.
 
+For VolleyStation files, use `read_dv()` for full play rows or `load_dv()` for a full match dictionary. Both automatically recognize `.vsm` filenames, including uppercase extensions:
+
+```python
+plays = dv.read_dv("match.vsm")  # The same call also reads match.dvw.
+match = dv.load_dv("match.vsm")
+```
+
 | Function | Output | Best for |
 | --- | --- | --- |
-| `read_plays(path)` | 50-field normalized analysis rows, including `source_file` | Filtering plays and rallies, grouping, summaries, and reports |
-| `read_raw_plays(path)` | Raw scout rows plus `source_file` | Inspecting scout codes and columns with minimal enrichment |
-| `read_dv(path)` | Full 88-field normalized play rows | Coordinates, video/event times, complete lineups, and detailed scout fields |
-| `load_dvw(path)` | Full match dictionary, including normalized plays | Match metadata, rosters, set scores, and results |
+| `read_plays(path)` | 50-field normalized analysis rows, including `source_file` | DVW filtering, grouping, summaries, and reports |
+| `read_raw_plays(path)` | Raw scout rows plus `source_file` | Inspecting DVW scout codes and columns with minimal enrichment |
+| `read_dv(path)` | Full 88-field normalized play rows | DVW or VSM coordinates, times, lineups, and detailed scout fields |
+| `load_dv(path)` | Full match dictionary, including normalized plays | DVW or VSM metadata, rosters, set scores, and results |
+| `load_dvw(path)` | The existing DVW-only full match reader | Backward-compatible DVW loading |
 
 Readers retain all scout events, including points, timeouts, substitutions, and lineup records. Filter after reading to preserve rally, possession, score, and phase context.
+
+### VolleyStation notes
+
+- Indoor only. Beach VSM files raise `ValueError`.
+- VSM returns the same match keys and 88 play keys as DVW. Team and player IDs remain strings, including numeric-looking IDs with leading zeros.
+- VSM datetimes retain the source timezone. Event clocks use `createdAt` plus `originalTime / 10`; video times use rounded seconds.
+- Scout codes are rebuilt from structured VSM fields. Zones and trajectories use DataVolley conventions.
+- Scores follow each source event, including downward corrections. All recorded sets are retained, including scrimmages beyond a normal match's winning set.
+- VSM `point_phase` identifies the scoring phase on winning/error touches, following the R reader. `attack_phase` applies only to attacks.
+- Unavailable fields use `None`. VSM does not provide attack cones, definition colors, or setter-call paths. Definition `raw_data` lists are empty because VSM has no semicolon-separated rows.
+- `file_line_number` identifies the actual JSON source line. Minified files normally report line 1.
+- Match IDs use a source `_id` when available, otherwise a stable hash of match identity metadata. They do not reproduce R's match-ID hash.
+- `read_plays()` and `read_raw_plays()` remain DVW-only. VSM support does not add R-only metadata or insert synthetic technical timeouts.
 
 ### Select complete rallies
 
@@ -158,12 +179,12 @@ The script writes both assets to `docs/`. To publish the demo, set GitHub **Sett
 
 ## Full match data
 
-Use `load_dvw()` when you need match metadata alongside the plays:
+Use `load_dv()` when you need match metadata alongside the plays:
 
 ```python
 import datavolley as dv
 
-match = dv.load_dvw(dv.example_file())
+match = dv.load_dv(dv.example_file())
 print(match["teams"])
 print(match["match_result"])
 ```
@@ -185,6 +206,8 @@ print(match["match_result"])
 ### Nested fields
 
 Expand a section for every field returned inside that match entry. Types below distinguish source metadata from normalized play rows: roster shirt numbers and player IDs remain strings, while their play-row equivalents are integers or `None`.
+
+The detailed types below describe DVW. VSM uses the same fields, but preserves string team/player IDs in metadata and play rows, and source timezone information in datetimes.
 
 <details>
 <summary><code>teams</code> — 4 fields</summary>
